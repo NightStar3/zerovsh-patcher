@@ -1,4 +1,4 @@
-TARGET = zerorco_patcher
+TARGET = zerovsh_patcher
 OBJS = main.o import.o logger.o hook.o blacklist.o
 INCDIR =
 CFLAGS = -O2 -G0 -Wall

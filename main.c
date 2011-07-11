@@ -1,18 +1,18 @@
 /*
- * This file is part of ZeroRCO Patcher.
+ * This file is part of ZeroVSH Patcher.
 
- * ZeroRCO Patcher is free software: you can redistribute it and/or modify
+ * ZeroVSH Patcher is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
 
- * ZeroRCO Patcher is distributed in the hope that it will be useful,
+ * ZeroVSH Patcher is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ZeroRCO Patcher. If not, see <http://www.gnu.org/licenses/ .
+ * along with ZeroVSH Patcher. If not, see <http://www.gnu.org/licenses/ .
  */
 
 //Headers
@@ -30,7 +30,7 @@
 #include "logger.h"
 #include "blacklist.h"
 
-PSP_MODULE_INFO("ZeroRCO_Patcher_Module", PSP_MODULE_KERNEL, 0, 3);
+PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
 PSP_MAIN_THREAD_ATTR(0);
 
 SceUID sceIoOpen_user(const char *file, int flags, SceMode mode);
@@ -51,12 +51,12 @@ char *g_blacklist_mod[] = {
 };
 
 //OK
-void *getUserBuffer(int size) {
+void *zeroCtrlAllocUserBuffer(int size) {
 	memid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "pathBuf", PSP_SMEM_High, size, NULL);
 	return (memid >= 0) ? sceKernelGetBlockHeadAddr(memid) : NULL;
 }
 //OK
-void freeUserBuffer(void) {
+void zeroCtrlFreeUserBuffer(void) {
 	if(memid >= 0) {
 		sceKernelFreePartitionMemory(memid);
 	}
@@ -113,15 +113,22 @@ char *zeroCtrlGetFileType(const char *file) {
 int zeroCtrlIoGetStat(const char *file, SceIoStat *stat, const char *ext) {
 	int ret;
 
-    //zeroCtrlWriteDebug("%s\n", file);
+	usermem = zeroCtrlAllocUserBuffer(256);
+
+    if(!usermem) {
+    	zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
+		pspSdkSetK1(k1);
+
+    	return sceIoGetstat_func(file, stat);
+    }
 
     if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
         // Copy data from 21 onwards into string
-        sprintf(usermem, "ms0:/seplugins/RCO/%s", file + 21); // flash0:/vsh/resource/
+        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/
     }
 	else if ((!strcmp(ext, ".pgf")) && (!zeroCtrlIsBlacklistedFound())) {
         // Copy data from 13 onwards into string
-        sprintf(usermem, "ms0:/seplugins/RCO/%s", file + 13); // flash0:/font/
+        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 13); // flash0:/font/
     }
 
     zeroCtrlWriteDebug("new file: %s\n", usermem);
@@ -136,21 +143,29 @@ int zeroCtrlIoGetStat(const char *file, SceIoStat *stat, const char *ext) {
         ret = sceIoGetstat_func(file, stat);
     }
 
+	zeroCtrlFreeUserBuffer();
     return ret;
 }
 //OK
 int zeroCtrlIoOpen(const char *file, int flags, SceMode mode, const char *ext) {
 	int ret;
 
-    //zeroCtrlWriteDebug("%s\n", file);
+	usermem = zeroCtrlAllocUserBuffer(256);
+
+    if(!usermem) {
+    	zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
+		pspSdkSetK1(k1);
+
+    	return sceIoOpen_func(file, flags, mode);
+    }
 
     if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
         // Copy data from 21 onwards into string
-        sprintf(usermem, "ms0:/seplugins/RCO/%s", file + 21); // flash0:/vsh/resource/
+        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/
     } 
 	else if ((!strcmp(ext, ".pgf")) && (!zeroCtrlIsBlacklistedFound())) {
         // Copy data from 13 onwards into string
-        sprintf(usermem, "ms0:/seplugins/RCO/%s", file + 13); // flash0:/font/
+        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 13); // flash0:/font/
     }
 
     zeroCtrlWriteDebug("new file: %s\n", usermem);
@@ -165,6 +180,7 @@ int zeroCtrlIoOpen(const char *file, int flags, SceMode mode, const char *ext) {
         ret = sceIoOpen_func(file, flags, mode);
     }
 
+	zeroCtrlFreeUserBuffer();
     return ret;
 }
 //OK
@@ -251,21 +267,16 @@ int OnModuleRelocated(SceModule2 *mod) {
 //OK
 int module_start(SceSize args, void *argp) {
     if(sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_VSH) {
-		//zeroCtrlSetupCalls();
-    	zeroCtrlWriteDebug("ZeroRCO Patcher v0.3\n");
+		
+    	zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
     	zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
     	zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
-    	usermem = getUserBuffer(256);
-    	if(!usermem) {
-    		zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
-    		return 1;
-    	}
+    	
     	previous = sctrlHENSetStartModuleHandler(OnModuleRelocated);
     }
     return 0;
 }
 //OK
 int module_stop(SceSize args, void *argp) {
-	freeUserBuffer();
 	return 0;
 }
