@@ -1,18 +1,18 @@
 /*
- * This file is part of ZeroRCO Patcher.
+ * This file is part of ZeroVSH Patcher.
 
- * ZeroRCO Patcher is free software: you can redistribute it and/or modify
+ * ZeroVSH Patcher is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
 
- * ZeroRCO Patcher is distributed in the hope that it will be useful,
+ * ZeroVSH Patcher is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ZeroRCO Patcher. If not, see <http://www.gnu.org/licenses/ .
+ * along with ZeroVSH Patcher. If not, see <http://www.gnu.org/licenses/ .
  */
 
 #include <pspsdk.h>
@@ -24,8 +24,8 @@
 char _buffer_log[256];
 SceUID debug_fd = -1;
 
-void zeroCtrlInitDebug() {
-	debug_fd = sceIoOpen("ms0:/seplugins/RCO/debug_user.txt", PSP_O_CREAT | PSP_O_APPEND | PSP_O_WRONLY, 0777);
+void zeroCtrlInitDebug(void) {
+	debug_fd = sceIoOpen(LOGFILE, PSP_O_CREAT | PSP_O_APPEND | PSP_O_WRONLY, 0777);
 }
 
 int kwrite(const char *path, void *buffer, int buflen) {
