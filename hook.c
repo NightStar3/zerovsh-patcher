@@ -23,6 +23,8 @@
 #include <psputilsforkernel.h>
 #include <psputils.h>
 #include <string.h>
+
+#include "systemctrl.h"
 #include "hook.h"
 #include "logger.h"
 
@@ -39,6 +41,8 @@ typedef struct
   unsigned int * vnids;
   unsigned int * vars;
 }PspModuleImport;
+
+unsigned int (*sceKernelQuerySystemCall_func)(void *function) = NULL;
 
 PspModuleImport * find_import_lib(SceModule2 * module, const char * library)
 {
@@ -146,7 +150,7 @@ void api_hook_import_syscall(unsigned int address, void * function)
     *(unsigned int *)(address) = 0x03E00008;
 
     //asm syscall #
-    *(unsigned int *)(address + 4) = (((sceKernelQuerySystemCall(function)) << 6) | 12);
+    *(unsigned int *)(address + 4) = (((sceKernelQuerySystemCall_func(function)) << 6) | 12);
 
     //flush cache
     sceKernelDcacheWritebackInvalidateRange((const void *)address, 8);

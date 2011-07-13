@@ -33,6 +33,11 @@
 PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
 PSP_MAIN_THREAD_ATTR(0);
 
+#define QUERYSYSCALL_352 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0x8B61808B)
+#define QUERYSYSCALL_500 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0xEB988556)
+#define QUERYSYSCALL_620 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0xAC9306F0)
+#define QUERYSYSCALL_635 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0x399FF74C)
+
 SceUID sceIoOpen_user(const char *file, int flags, SceMode mode);
 int sceIoGetstat_user(const char *file, SceIoStat *stat);
 
@@ -50,6 +55,32 @@ char *g_blacklist_mod[] = {
 		"sceHVNetfront_Module"
 };
 
+//OK
+void zeroCtrlInitImports(void) {	
+	if(QUERYSYSCALL_500 != 0) {
+		zeroCtrlWriteDebug("Runnning ~ 5.00\n");
+		sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_500;		
+	}		
+	else {		
+		if(QUERYSYSCALL_620 != 0) {
+			zeroCtrlWriteDebug("Runnning 6.20\n");
+			sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_620;
+		}
+		else {
+			if(QUERYSYSCALL_635 != 0) {
+				zeroCtrlWriteDebug("Runnning ~ 6.35\n");
+				sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_635;
+			}
+			else
+			{
+				if(QUERYSYSCALL_352 != 0) {			
+					zeroCtrlWriteDebug("Runnning unrandomized\n");
+					sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_352;
+				}
+			}			
+		}		
+	}
+}
 //OK
 void *zeroCtrlAllocUserBuffer(int size) {
 	memid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "pathBuf", PSP_SMEM_High, size, NULL);
@@ -86,7 +117,6 @@ void ClearCaches(void) {
 	zeroCtrlIcacheClearAll();
 	zeroCtrlDcacheWritebackAll();
 }
-
 //OK
 char *zeroCtrlGetFileType(const char *file) {
     char *ret = NULL;
@@ -108,7 +138,6 @@ char *zeroCtrlGetFileType(const char *file) {
 
     return ret;
 }
-
 //OK
 int zeroCtrlIoGetStat(const char *file, SceIoStat *stat, const char *ext) {
 	int ret;
@@ -187,7 +216,7 @@ int zeroCtrlIoOpen(const char *file, int flags, SceMode mode, const char *ext) {
 int sceIoGetstat_patched(const char *file, SceIoStat *stat) {
 	char *ext = NULL;
 
-    k1 = pspSdkGetK1();
+    k1 = pspSdkSetK1(0);
     zeroCtrlWriteDebug("file: %s, k1 value: 0x%08X\n", file, k1);
 
 	sceIoGetstat_func = !k1 ? sceIoGetstat : sceIoGetstat_user;
@@ -218,6 +247,7 @@ SceUID sceIoOpen_patched(const char *file, int flags, SceMode mode) {
 
     k1 = pspSdkSetK1(0);
     zeroCtrlWriteDebug("file: %s, k1 value: 0x%08X\n", file, k1);
+
 	sceIoOpen_func = !k1 ? sceIoOpen : sceIoOpen_user;
 
     if (strncmp(file, "flash0:/", 8) != 0) {
@@ -266,14 +296,13 @@ int OnModuleRelocated(SceModule2 *mod) {
 }
 //OK
 int module_start(SceSize args, void *argp) {
-    if(sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_VSH) {
-		
-    	zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
-    	zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
-    	zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
-    	
-    	previous = sctrlHENSetStartModuleHandler(OnModuleRelocated);
-    }
+	zeroCtrlInitImports();
+
+    zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
+    zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
+    zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
+ 	
+    previous = sctrlHENSetStartModuleHandler(OnModuleRelocated);  
     return 0;
 }
 //OK
