@@ -29,14 +29,10 @@
 #include "hook.h"
 #include "logger.h"
 #include "blacklist.h"
+#include "resolver.h"
 
 PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
 PSP_MAIN_THREAD_ATTR(0);
-
-#define QUERYSYSCALL_352 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0x8B61808B)
-#define QUERYSYSCALL_500 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0xEB988556)
-#define QUERYSYSCALL_620 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0xAC9306F0)
-#define QUERYSYSCALL_635 sctrlHENFindFunction("sceInterruptManager", "InterruptManagerForKernel", 0x399FF74C)
 
 SceUID sceIoOpen_user(const char *file, int flags, SceMode mode);
 int sceIoGetstat_user(const char *file, SceIoStat *stat);
@@ -55,32 +51,6 @@ char *g_blacklist_mod[] = {
 		"sceHVNetfront_Module"
 };
 
-//OK
-void zeroCtrlInitImports(void) {	
-	if(QUERYSYSCALL_500 != 0) {
-		zeroCtrlWriteDebug("Runnning ~ 5.00\n");
-		sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_500;		
-	}		
-	else {		
-		if(QUERYSYSCALL_620 != 0) {
-			zeroCtrlWriteDebug("Runnning 6.20\n");
-			sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_620;
-		}
-		else {
-			if(QUERYSYSCALL_635 != 0) {
-				zeroCtrlWriteDebug("Runnning ~ 6.35\n");
-				sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_635;
-			}
-			else
-			{
-				if(QUERYSYSCALL_352 != 0) {			
-					zeroCtrlWriteDebug("Runnning unrandomized\n");
-					sceKernelQuerySystemCall_func = (void *)QUERYSYSCALL_352;
-				}
-			}			
-		}		
-	}
-}
 //OK
 void *zeroCtrlAllocUserBuffer(int size) {
 	memid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "pathBuf", PSP_SMEM_High, size, NULL);
@@ -296,7 +266,19 @@ int OnModuleRelocated(SceModule2 *mod) {
 }
 //OK
 int module_start(SceSize args, void *argp) {
-	zeroCtrlInitImports();
+	u32 fw_ver;
+	u32 devkit = sceKernelDevkitVersion();
+
+	if(devkit >= 0x06030010 && devkit < 0x06040010) {
+		fw_ver = FW_63X;
+	} else if (devkit >= 0x06020010) {
+		fw_ver = FW_620;
+	} else if (devkit >= 0x05000010) {
+		fw_ver = FW_5XX;
+	} else {
+		fw_ver = FW_3XX;
+	}
+	zeroCtrlResolveNids(fw_ver);
 
     zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
     zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");

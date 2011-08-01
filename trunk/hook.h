@@ -24,9 +24,6 @@
 
 #include "psploadcore.h"
 
-//query syscall number
-unsigned int (*sceKernelQuerySystemCall_func)(void *function);
-
 //hook function via import (can do jump & syscall hooks)
 int hook_import_bynid(SceModule2 * module, const char * library, unsigned int nid, void * function, int syscall, int skip);
 
