@@ -28,6 +28,7 @@
 u32 sctrlHENFindFunction(char *modname, char *libname, u32 nid);
 unsigned int sceKernelQuerySystemCall(void * function);
 
+
 nid nids[] =
 {
     {
@@ -65,22 +66,23 @@ libname libs[] = {
 		{ "sceInterruptManager"   , "InterruptManagerForKernel", 4 },
 };
 
-void zeroCtrlResolveNids(int fw_version) {
-	u32 fw_nid;
-	u32 func;
+void zeroCtrlResolveNids(void) {
+
+	int fw_version;
+	u32 fw_nid, func;
 	int count = 0;
+
+	fw_version = sceKernelDevkitVersion();
 
 	for(int i = 0; i < sizeof(nids) / sizeof(nid); i++) {
 		if(i == libs[count].count) {
 			count++;
 		}
-		if(fw_version == FW_5XX) {
-			fw_nid = nids[i].nid5xx;
-		} else if(fw_version == FW_5XX) {
-			fw_nid = nids[i].nid5xx;
-		} else if(fw_version == FW_620) {
+		if((fw_version >= 0x05000010) & (fw_version <= 0x05050010)) {
+			fw_nid = nids[i].nid5xx;		 
+		} else if(fw_version == 0x06020010) {
 			fw_nid = nids[i].nid620;
-		} else if(fw_version == FW_63X) {
+		} else if((fw_version >= 0x06030010) & (fw_version <= 0x06030910)) {
 			fw_nid = nids[i].nid63x;
 		} else {
 			return;
