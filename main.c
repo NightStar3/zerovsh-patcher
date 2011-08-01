@@ -266,19 +266,8 @@ int OnModuleRelocated(SceModule2 *mod) {
 }
 //OK
 int module_start(SceSize args, void *argp) {
-	u32 fw_ver;
-	u32 devkit = sceKernelDevkitVersion();
-
-	if(devkit >= 0x06030010 && devkit < 0x06040010) {
-		fw_ver = FW_63X;
-	} else if (devkit >= 0x06020010) {
-		fw_ver = FW_620;
-	} else if (devkit >= 0x05000010) {
-		fw_ver = FW_5XX;
-	} else {
-		fw_ver = FW_3XX;
-	}
-	zeroCtrlResolveNids(fw_ver);
+	
+	zeroCtrlResolveNids();
 
     zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
     zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");

@@ -36,6 +36,6 @@ typedef struct {
 	int count;
 } libname;
 
-void zeroCtrlResolveNids(int fw_version);
+void zeroCtrlResolveNids(void);
 
 #endif /* RESOLVER_H_ */
