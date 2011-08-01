@@ -1,7 +1,10 @@
 TARGET = zerovsh_patcher
-OBJS = main.o import.o logger.o hook.o blacklist.o
+OBJS = main.o import.o logger.o hook.o blacklist.o resolver.o
 INCDIR =
-CFLAGS = -O2 -G0 -Wall
+CFLAGS = -O2 -G0 -Wall -std=c99 -Wshadow
+
+all:
+	-psp-packer zerovsh_patcher.prx zerovsh_patcher.prx
 
 ifeq ($(DEBUG), 1)
 CFLAGS+=-DDEBUG
