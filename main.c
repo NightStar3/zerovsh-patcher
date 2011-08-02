@@ -34,12 +34,6 @@
 PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
 PSP_MAIN_THREAD_ATTR(0);
 
-SceUID sceIoOpen_user(const char *file, int flags, SceMode mode);
-int sceIoGetstat_user(const char *file, SceIoStat *stat);
-
-SceUID (*sceIoOpen_func)(const char *file, int flags, SceMode mode);
-int (*sceIoGetstat_func)(const char *file, SceIoStat *stat);
-
 STMOD_HANDLER previous = NULL;
 
 int k1;
@@ -118,7 +112,7 @@ int zeroCtrlIoGetStat(const char *file, SceIoStat *stat, const char *ext) {
     	zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
 		pspSdkSetK1(k1);
 
-    	return sceIoGetstat_func(file, stat);
+    	return sceIoGetstat(file, stat);
     }
 
     if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
@@ -133,13 +127,13 @@ int zeroCtrlIoGetStat(const char *file, SceIoStat *stat, const char *ext) {
     zeroCtrlWriteDebug("new file: %s\n", usermem);
 	pspSdkSetK1(k1);
 
-	ret = sceIoGetstat_func(usermem, stat);
+	ret = sceIoGetstat(usermem, stat);
 
     if (ret >= 0) {
         zeroCtrlWriteDebug("--> found, using custom file\n\n");
     } else {
         zeroCtrlWriteDebug("--> not found, using default file\n\n");
-        ret = sceIoGetstat_func(file, stat);
+        ret = sceIoGetstat(file, stat);
     }
 
 	zeroCtrlFreeUserBuffer();
@@ -155,7 +149,7 @@ int zeroCtrlIoOpen(const char *file, int flags, SceMode mode, const char *ext) {
     	zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
 		pspSdkSetK1(k1);
 
-    	return sceIoOpen_func(file, flags, mode);
+    	return sceIoOpen(file, flags, mode);
     }
 
     if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
@@ -170,13 +164,13 @@ int zeroCtrlIoOpen(const char *file, int flags, SceMode mode, const char *ext) {
     zeroCtrlWriteDebug("new file: %s\n", usermem);
 	pspSdkSetK1(k1);
 
-	ret = sceIoOpen_func(usermem, flags, mode);
+	ret = sceIoOpen(usermem, flags, mode);
 
     if (ret >= 0) {
         zeroCtrlWriteDebug("--> found, using custom file\n\n");
     } else {
         zeroCtrlWriteDebug("--> not found, using default file\n\n");
-        ret = sceIoOpen_func(file, flags, mode);
+        ret = sceIoOpen(file, flags, mode);
     }
 
 	zeroCtrlFreeUserBuffer();
@@ -189,12 +183,12 @@ int sceIoGetstat_patched(const char *file, SceIoStat *stat) {
     k1 = pspSdkSetK1(0);
     zeroCtrlWriteDebug("file: %s, k1 value: 0x%08X\n", file, k1);
 
-	sceIoGetstat_func = !k1 ? sceIoGetstat : sceIoGetstat_user;
-
 	if (strncmp(file, "flash0:/", 8) != 0) {
         zeroCtrlWriteDebug("file is not being accessed from flash0\n\n");
         pspSdkSetK1(k1);
-        return sceIoGetstat_func(file, stat);
+        int ret = sceIoGetstat(file, stat);
+		zeroCtrlWriteDebug("sceIoGetstat returned %08X\n", ret);
+		return ret;
     }
 
 	ext = zeroCtrlGetFileType(file);
@@ -202,14 +196,14 @@ int sceIoGetstat_patched(const char *file, SceIoStat *stat) {
     if (!ext) {
     	zeroCtrlWriteDebug("Error getting file extension\n\n");
     	pspSdkSetK1(k1);
-    	return sceIoGetstat_func(file, stat);
+    	return sceIoGetstat(file, stat);
     } else if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp")) | (!strcmp(ext, ".pgf"))) {
         return zeroCtrlIoGetStat(file, stat, ext);
     }
 
     zeroCtrlWriteDebug("file ext is not our type: %s\n\n", ext);
     pspSdkSetK1(k1);
-    return sceIoGetstat_func(file, stat);
+    return sceIoGetstat(file, stat);
 }
 //OK
 SceUID sceIoOpen_patched(const char *file, int flags, SceMode mode) {
@@ -218,12 +212,10 @@ SceUID sceIoOpen_patched(const char *file, int flags, SceMode mode) {
     k1 = pspSdkSetK1(0);
     zeroCtrlWriteDebug("file: %s, k1 value: 0x%08X\n", file, k1);
 
-	sceIoOpen_func = !k1 ? sceIoOpen : sceIoOpen_user;
-
     if (strncmp(file, "flash0:/", 8) != 0) {
         zeroCtrlWriteDebug("file is not being accessed from flash0\n\n");
         pspSdkSetK1(k1);
-        return sceIoOpen_func(file, flags, mode);
+        return sceIoOpen(file, flags, mode);
     }
 
     ext = zeroCtrlGetFileType(file);
@@ -231,14 +223,14 @@ SceUID sceIoOpen_patched(const char *file, int flags, SceMode mode) {
     if (!ext) {
     	zeroCtrlWriteDebug("Error getting file extension\n\n");
     	pspSdkSetK1(k1);
-    	return sceIoOpen_func(file, flags, mode);
+    	return sceIoOpen(file, flags, mode);
     } else if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp")) | (!strcmp(ext, ".pgf"))) {
         return zeroCtrlIoOpen(file, flags, mode, ext);
     }
 
     zeroCtrlWriteDebug("file ext is not our type: %s\n\n", ext);
     pspSdkSetK1(k1);
-    return sceIoOpen_func(file, flags, mode);
+    return sceIoOpen(file, flags, mode);
 }
 //OK
 int OnModuleRelocated(SceModule2 *mod) {
