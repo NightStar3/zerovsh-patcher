@@ -19,7 +19,7 @@
 #include <pspsdk.h>
 #include <psputilsforkernel.h>
 #include <pspiofilemgr.h>
-#include <pspsysevent.h>
+#include <pspsysmem_kernel.h>
 
 // from CFW SDK
 #include "psploadcore.h"
@@ -36,7 +36,7 @@ PSP_MAIN_THREAD_ATTR(0);
 
 STMOD_HANDLER previous = NULL;
 
-int k1;
+int k1, model;
 
 SceUID memid;
 char *usermem;
@@ -117,11 +117,19 @@ int zeroCtrlIoGetStat(const char *file, SceIoStat *stat, const char *ext) {
 
     if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
         // Copy data from 21 onwards into string
-        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/
+		if(model == 4)	{
+			sprintf(usermem, "ef0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/	
+		} else {
+			sprintf(usermem, "ms0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/	
+		}
     }
 	else if ((!strcmp(ext, ".pgf")) && (!zeroCtrlIsBlacklistedFound())) {
         // Copy data from 13 onwards into string
-        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 13); // flash0:/font/
+		if(model == 4)	{
+			sprintf(usermem, "ef0:/PSP/VSH/%s", file + 13); // flash0:/font/
+		} else {
+			sprintf(usermem, "ms0:/PSP/VSH/%s", file + 13); // flash0:/font/
+		}
     }
 
     zeroCtrlWriteDebug("new file: %s\n", usermem);
@@ -153,12 +161,20 @@ int zeroCtrlIoOpen(const char *file, int flags, SceMode mode, const char *ext) {
     }
 
     if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
-        // Copy data from 21 onwards into string
-        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/
+         // Copy data from 21 onwards into string
+		if(model == 4)	{
+			sprintf(usermem, "ef0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/	
+		} else {
+			sprintf(usermem, "ms0:/PSP/VSH/%s", file + 21); // flash0:/vsh/resource/	
+		}
     } 
 	else if ((!strcmp(ext, ".pgf")) && (!zeroCtrlIsBlacklistedFound())) {
-        // Copy data from 13 onwards into string
-        sprintf(usermem, "ms0:/PSP/VSH/%s", file + 13); // flash0:/font/
+       // Copy data from 13 onwards into string
+		if(model == 4)	{
+			sprintf(usermem, "ef0:/PSP/VSH/%s", file + 13); // flash0:/font/
+		} else {
+			sprintf(usermem, "ms0:/PSP/VSH/%s", file + 13); // flash0:/font/
+		}
     }
 
     zeroCtrlWriteDebug("new file: %s\n", usermem);
@@ -265,6 +281,7 @@ int module_start(SceSize args, void *argp) {
     zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
     zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
  	
+	model = sceKernelGetModel();
     previous = sctrlHENSetStartModuleHandler(OnModuleRelocated);  
     return 0;
 }

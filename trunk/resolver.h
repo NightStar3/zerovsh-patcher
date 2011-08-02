@@ -20,8 +20,6 @@
 
 #include <psptypes.h>
 
-enum fw_ver {FW_3XX, FW_5XX, FW_620, FW_63X };
-
 typedef struct {
 	u32 nidsha1;
 	u32 nid5xx;
