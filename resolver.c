@@ -78,7 +78,9 @@ void zeroCtrlResolveNids(void) {
 		if(i == libs[count].count) {
 			count++;
 		}
-		if((fw_version >= 0x05000010) & (fw_version <= 0x05050010)) {
+		if(fw_version <= 0x03050210) {
+			fw_nid = nids[i].nidsha1;
+		} else if((fw_version >= 0x05000010) & (fw_version <= 0x05050010)) {
 			fw_nid = nids[i].nid5xx;		 
 		} else if(fw_version == 0x06020010) {
 			fw_nid = nids[i].nid620;
