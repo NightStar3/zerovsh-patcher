@@ -87,10 +87,10 @@ void zeroCtrlResolveNids(void) {
 		} else {
 			return;
 		}
-		zeroCtrlWriteDebug("Searching for %s, %s, %08X\n", libs[count].prxname, libs[count].name, nid);
+		zeroCtrlWriteDebug("Searching for %s, %s, %08X\n", libs[count].prxname, libs[count].name, fw_nid);
 		func = sctrlHENFindFunction(libs[count].prxname, libs[count].name, fw_nid);
 		if(!func) {
-			zeroCtrlWriteDebug("Cannot find address for nid: %08X\n", nid);
+			zeroCtrlWriteDebug("Cannot find address for nid: %08X\n", fw_nid);
 			continue;
 		}
 		MAKE_JUMP(nids[i].stub, func);
