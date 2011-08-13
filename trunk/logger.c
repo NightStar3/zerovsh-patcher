@@ -30,15 +30,15 @@ void zeroCtrlInitDebug(void) {
 
 int kwrite(const char *path, void *buffer, int buflen) {
     int written = 0;
-    int close = 0;
+    int closed = 0;
     int k1 = pspSdkSetK1(0);
     if(debug_fd < 0) {
     	zeroCtrlInitDebug();
-    	close = 1;
+    	closed = 1;
     }
     if(debug_fd >= 0) {
         written = sceIoWrite(debug_fd, buffer, buflen);
-        if(close) {
+        if(closed) {
         	sceIoClose(debug_fd);
         	debug_fd = -1;
         }

@@ -9,21 +9,11 @@ PSP_EXPORT_END
 PSP_EXPORT_START(ZeroCtrlForUser, 0, 0x4001)
 PSP_EXPORT_FUNC(sceIoOpen_patched)
 PSP_EXPORT_FUNC(sceIoGetstat_patched)
-PSP_EXPORT_FUNC(zeroCtrlGetFileType)
-PSP_EXPORT_FUNC(zeroCtrlSetBlackListItems)
-PSP_EXPORT_FUNC(zeroCtrlIsBlacklistedFound)
-PSP_EXPORT_FUNC(zeroCtrlIcacheClearAll)
-PSP_EXPORT_FUNC(zeroCtrlDcacheWritebackAll)
 PSP_EXPORT_END
 
 PSP_EXPORT_START(ZeroCtrlForKernel, 0, 0x0001)
 PSP_EXPORT_FUNC(sceIoOpen_patched)
 PSP_EXPORT_FUNC(sceIoGetstat_patched)
-PSP_EXPORT_FUNC(zeroCtrlGetFileType)
-PSP_EXPORT_FUNC(zeroCtrlSetBlackListItems)
-PSP_EXPORT_FUNC(zeroCtrlIsBlacklistedFound)
-PSP_EXPORT_FUNC(zeroCtrlIcacheClearAll)
-PSP_EXPORT_FUNC(zeroCtrlDcacheWritebackAll)
 PSP_EXPORT_END
 
 PSP_END_EXPORTS

@@ -25,6 +25,6 @@
 #include "psploadcore.h"
 
 //hook function via import (can do jump & syscall hooks)
-int hook_import_bynid(SceModule2 * module, const char * library, unsigned int nid, void * function, int syscall, int skip);
+int hook_import_bynid(SceModule2 * module, const char * library, unsigned int nid, void * function, int syscall, const char *mod_name);
 
 #endif /* HOOK_H_ */
