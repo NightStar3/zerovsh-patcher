@@ -36,6 +36,7 @@ nid nids[] =
     		0x5630F321,
     		0xE5E18A99,
     		0x4621A9CC,
+			0x7158CE7E,
     		(u32)sceKernelAllocPartitionMemory,
     },
     {
@@ -43,6 +44,7 @@ nid nids[] =
     		0xAFBE8876,
     		0x093DE56A,
     		0x8FDAFC4C,
+			0xC1A26C6F,
     		(u32)sceKernelFreePartitionMemory,
     },
     {
@@ -50,6 +52,7 @@ nid nids[] =
     		0x950BCB31,
     		0xFEB5C72B,
     		0x52B54B93,
+			0xF12A62F7,
     		(u32)sceKernelGetBlockHeadAddr,
     },
     {
@@ -57,6 +60,7 @@ nid nids[] =
     		0xEB988556,
     		0xAC9306F0,
     		0x399FF74C,
+			0xF153B371,
     		(u32)sceKernelQuerySystemCall,
     },
 };
@@ -86,6 +90,8 @@ void zeroCtrlResolveNids(void) {
 			fw_nid = nids[i].nid620;
 		} else if((fw_version >= 0x06030010) & (fw_version <= 0x06030910)) {
 			fw_nid = nids[i].nid63x;
+		} else if(fw_version == 0x06060010) {
+			fw_nid = nids[i].nid660;
 		} else {
 			return;
 		}

@@ -28,6 +28,11 @@
 #include "hook.h"
 #include "logger.h"
 
+
+#define SYSCALL_OPCODE 0x0000000C
+#define MAKE_SYSCALL( a, f ) _sw(SYSCALL_OPCODE | ( ( ( unsigned int )( f ) & 0x03ffffff ) << 6), a )
+#define EXTRACT_SYSCALL(x) (((x) & ~SYSCALL_OPCODE) >> 6)
+
 typedef struct
 {
   const char * name;
@@ -150,7 +155,7 @@ void api_hook_import_syscall(unsigned int address, void * function)
     *(unsigned int *)(address) = 0x03E00008;
 
     //asm syscall #
-    *(unsigned int *)(address + 4) = (((sceKernelQuerySystemCall(function)) << 6) | 12);
+    MAKE_SYSCALL(address + 4, sceKernelQuerySystemCall(function));
 
     //flush cache
     sceKernelDcacheWritebackInvalidateRange((const void *)address, 8);
@@ -158,7 +163,39 @@ void api_hook_import_syscall(unsigned int address, void * function)
   }
 }
 
-int hook_import_bynid(SceModule2 * module, const char * library, unsigned int nid, void * function, int syscall, int skip)
+int syscall_patched(const char *mod_name, const char *library, u32 nid, u32 stub) {
+	u32 stub_sys, func_sys, sys_op;
+
+	void *func = (void *)sctrlHENFindFunction(mod_name, library, nid);
+	zeroCtrlWriteDebug("mod: %s, lib: %s, nid: %08X, func: %08X\n", mod_name, library, nid, func);
+	sys_op = *(u32 *)(stub + 4);
+
+	zeroCtrlWriteDebug("Stub opcode: %08X\n", *(u32 *)(stub));
+	if(!(sys_op & SYSCALL_OPCODE) || *(u32 *)(stub) != 0x03E00008) {
+		zeroCtrlWriteDebug("Stub already patched\n");
+		return 1;
+	}
+
+	if(func != NULL) { // check if a syscall is placed
+
+		zeroCtrlWriteDebug("Syscall opcode: %08X\n", sys_op);
+		stub_sys = EXTRACT_SYSCALL(sys_op);
+		zeroCtrlWriteDebug("Stub syscall number: %i\n", stub_sys);
+		func_sys = sceKernelQuerySystemCall(func);
+		zeroCtrlWriteDebug("Real syscall number: %i\n", func_sys);
+
+		// func_sys == -1 :      syscall already patched
+		// func_sys != stub_sys: syscall replaced by another one
+		if(func_sys == -1 || func_sys != stub_sys) {
+			zeroCtrlWriteDebug("Syscall already patched\n");
+			return 1;
+		}
+	}
+	return 0;
+
+}
+
+int hook_import_bynid(SceModule2 * module, const char * library, unsigned int nid, void * function, int syscall, const char *mod_name)
 {
   //result
   int result = 0;
@@ -170,7 +207,7 @@ int hook_import_bynid(SceModule2 * module, const char * library, unsigned int ni
   {
     //write syscall
     if(syscall) {
-		if(skip && *(unsigned int *)stub != 0x03E00008) {
+		if(mod_name && syscall_patched(mod_name, library, nid, stub)) {
 			return -2;
 		}
 		api_hook_import_syscall(stub, function);

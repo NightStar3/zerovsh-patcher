@@ -144,7 +144,9 @@ int zeroCtrlIoGetStat(const char *file, SceIoStat *stat, const char *ext) {
         ret = sceIoGetstat(file, stat);
     }
 
+    pspSdkSetK1(0);
 	zeroCtrlFreeUserBuffer();
+	pspSdkSetK1(k1);
     return ret;
 }
 //OK
@@ -189,7 +191,9 @@ int zeroCtrlIoOpen(const char *file, int flags, SceMode mode, const char *ext) {
         ret = sceIoOpen(file, flags, mode);
     }
 
+    pspSdkSetK1(0);
 	zeroCtrlFreeUserBuffer();
+	pspSdkSetK1(k1);
     return ret;
 }
 //OK
@@ -249,40 +253,51 @@ SceUID sceIoOpen_patched(const char *file, int flags, SceMode mode) {
     return sceIoOpen(file, flags, mode);
 }
 //OK
-int OnModuleRelocated(SceModule2 *mod) {
-    zeroCtrlWriteDebug("Relocating: %s\n", mod->modname);
-    zeroCtrlWriteDebug("Version: %d.%d\n", mod->version[1], mod->version[0]);
-    zeroCtrlWriteDebug("Attribute: 0x%04X\n\n", mod->attribute);
-
-	zeroCtrlSetBlackListItems(mod->modname, g_blacklist_mod, 1);
-	ClearCaches();
-
-    if((mod->text_addr & 0x80000000) == 0x80000000) {
-    	zeroCtrlWriteDebug("Mode: kernel\n\n");
-    	hook_import_bynid(mod, "IoFileMgrForKernel", 0x109F50BC, sceIoOpen_patched, 0, 0);
-		hook_import_bynid(mod, "IoFileMgrForKernel", 0xACE946E8, sceIoGetstat_patched, 0, 0);
-    } else {
-    	zeroCtrlWriteDebug("Mode: user\n\n");
-    	if(hook_import_bynid(mod, "IoFileMgrForUser", 0x109F50BC, sceIoOpen_patched, 1, 1) == -2) {
-			zeroCtrlWriteDebug("hook skipped\n");
-		}
-		if(hook_import_bynid(mod, "IoFileMgrForUser", 0xACE946E8, sceIoGetstat_patched, 1, 1) == -2) {
-			zeroCtrlWriteDebug("hook skipped\n");
-		}
-    }
-    return previous ? previous(mod) : 0;
+void zeroCtrlPatchModule(SceModule2 *mod, int syscall, const char *mod_name) {
+	const char *lib = syscall ? "IoFileMgrForUser" : "IoFileMgrForKernel";
+	hook_import_bynid(mod, lib, 0x109F50BC, sceIoOpen_patched, syscall, mod_name);
+	hook_import_bynid(mod, lib, 0xACE946E8, sceIoGetstat_patched, syscall, mod_name);
+    ClearCaches();
 }
 //OK
+int OnModuleStart(SceModule2 *mod) {
+    zeroCtrlWriteDebug("Relocating: %s\n", mod->modname);
+    zeroCtrlWriteDebug("Version: %d.%d\n", mod->version[1], mod->version[0]);
+    zeroCtrlWriteDebug("Attribute: 0x%04X\n", mod->attribute);
+
+	zeroCtrlSetBlackListItems(mod->modname, g_blacklist_mod, 1);
+    if((mod->text_addr & 0x80000000) == 0x80000000) {
+    	zeroCtrlWriteDebug("Mode: kernel\n");
+    	// only patch VSH control for now
+    	if(strcmp(mod->modname, "VshCtrl") == 0 || strcmp(mod->modname, "VshControl") == 0) {
+    		zeroCtrlPatchModule(mod, 0, NULL);
+    	}
+    } else {
+    	zeroCtrlWriteDebug("Mode: user\n");
+    	zeroCtrlPatchModule(mod, 1, "sceIOFileManager");
+    }
+    zeroCtrlWriteDebug("end\n\n");
+    return previous ? previous(mod) : 0;
+}
+
 int module_start(SceSize args, void *argp) {
-	
 	zeroCtrlResolveNids();
 
     zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
     zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
     zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
+
+    // patch the PRO/ME module if is already loaded before us
+    SceModule2 *mod = sceKernelFindModuleByName("VshCtrl");
+    if(mod == NULL) {
+    	mod = sceKernelFindModuleByName("VshControl");
+    }
+    if(mod != NULL) {
+        zeroCtrlPatchModule(mod, 0, NULL);
+    }
  	
 	model = sceKernelGetModel();
-    previous = sctrlHENSetStartModuleHandler(OnModuleRelocated);  
+    previous = sctrlHENSetStartModuleHandler(OnModuleStart);
     return 0;
 }
 //OK
