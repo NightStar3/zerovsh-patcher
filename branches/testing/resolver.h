@@ -25,6 +25,7 @@ typedef struct {
 	u32 nid5xx;
 	u32 nid620;
 	u32 nid63x;
+	u32 nid660;
 	u32 stub;
 } nid;
 
