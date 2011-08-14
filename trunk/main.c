@@ -34,6 +34,8 @@
 PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
 PSP_MAIN_THREAD_ATTR(0);
 
+SceUID vshKernelLoadModuleVSH(const char *path, int flags, SceKernelLMOption *option);
+
 STMOD_HANDLER previous = NULL;
 
 int k1, model;
@@ -252,11 +254,80 @@ SceUID sceIoOpen_patched(const char *file, int flags, SceMode mode) {
     pspSdkSetK1(k1);
     return sceIoOpen(file, flags, mode);
 }
+
+SceUID zeroCtrlLoadModuleVSH(const char *path, int flags, SceKernelLMOption *option, const char *ext) {
+	int ret;
+
+	usermem = zeroCtrlAllocUserBuffer(256);
+
+    if(!usermem) {
+    	zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
+		pspSdkSetK1(k1);
+
+    	return vshKernelLoadModuleVSH(path, flags, option);
+    }
+
+    if ((!strcmp(ext, ".prx"))) {
+         // Copy data from 19 onwards into string
+		if(model == 4)	{
+			sprintf(usermem, "ef0:/PSP/VSH/%s", path + 19); // flash0:/vsh/module/
+		} else {
+			sprintf(usermem, "ms0:/PSP/VSH/%s", path + 19); // flash0:/vsh/module/
+		}
+    }
+
+    zeroCtrlWriteDebug("new file: %s\n", usermem);
+	pspSdkSetK1(k1);
+
+	ret = vshKernelLoadModuleVSH(usermem, flags, option);
+
+    if (ret >= 0) {
+        zeroCtrlWriteDebug("--> found, using custom file\n\n");
+    } else {
+        zeroCtrlWriteDebug("--> not found, using default file\n\n");
+        ret = vshKernelLoadModuleVSH(path, flags, option);
+    }
+
+    pspSdkSetK1(0);
+	zeroCtrlFreeUserBuffer();
+	pspSdkSetK1(k1);
+    return ret;
+}
+
+SceUID vshKernelLoadModuleVSH_patched(const char *path, int flags, SceKernelLMOption *option) {
+    char *ext = NULL;
+
+    k1 = pspSdkSetK1(0);
+    zeroCtrlWriteDebug("path: %s, k1 value: 0x%08X\n", path, k1);
+
+    if (strncmp(path, "flash0:/", 8) != 0) {
+        zeroCtrlWriteDebug("file is not being accessed from flash0\n\n");
+        pspSdkSetK1(k1);
+        return vshKernelLoadModuleVSH(path, flags, option);
+    }
+
+    ext = zeroCtrlGetFileType(path);
+
+    if (!ext) {
+    	zeroCtrlWriteDebug("Error getting file extension\n\n");
+    	pspSdkSetK1(k1);
+    	return vshKernelLoadModuleVSH(path, flags, option);
+    } else if ((!strcmp(ext, ".prx"))) {
+        return zeroCtrlLoadModuleVSH(path, flags, option, ext);
+    }
+
+    zeroCtrlWriteDebug("file ext is not our type: %s\n\n", ext);
+    pspSdkSetK1(k1);
+    return vshKernelLoadModuleVSH(path, flags, option);
+}
 //OK
 void zeroCtrlPatchModule(SceModule2 *mod, int syscall, const char *mod_name) {
 	const char *lib = syscall ? "IoFileMgrForUser" : "IoFileMgrForKernel";
 	hook_import_bynid(mod, lib, 0x109F50BC, sceIoOpen_patched, syscall, mod_name);
 	hook_import_bynid(mod, lib, 0xACE946E8, sceIoGetstat_patched, syscall, mod_name);
+	if(syscall) {
+		hook_import_bynid(mod, "sceVshBridge", 0xA5628F0D, vshKernelLoadModuleVSH_patched, syscall, NULL);
+	}
     ClearCaches();
 }
 //OK

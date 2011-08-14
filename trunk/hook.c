@@ -167,7 +167,7 @@ int syscall_patched(const char *mod_name, const char *library, u32 nid, u32 stub
 	u32 stub_sys, func_sys, sys_op;
 
 	void *func = (void *)sctrlHENFindFunction(mod_name, library, nid);
-	zeroCtrlWriteDebug("mod: %s, lib: %s, nid: %08X, func: %08X\n", mod_name, library, nid, func);
+	zeroCtrlWriteDebug("mod: %s, lib: %s, nid: %08X, func: %08X\n", mod_name, library, nid, (u32)func);
 	sys_op = *(u32 *)(stub + 4);
 
 	zeroCtrlWriteDebug("Stub opcode: %08X\n", *(u32 *)(stub));
