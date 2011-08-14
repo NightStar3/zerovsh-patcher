@@ -267,8 +267,16 @@ SceUID zeroCtrlLoadModuleVSH(const char *path, int flags, SceKernelLMOption *opt
     	return vshKernelLoadModuleVSH(path, flags, option);
     }
 
-    if ((!strcmp(ext, ".prx"))) {
-         // Copy data from 19 onwards into string
+    if ((!strncmp(path, "flash0:/kd/", 11))) {
+		 // Copy data from 11 onwards into string
+		if(model == 4)	{
+			sprintf(usermem, "ef0:/PSP/VSH/%s", path + 11); // flash0:/kd/
+		} else {
+			sprintf(usermem, "ms0:/PSP/VSH/%s", path + 11); // flash0:/kd/
+		}
+	}
+	else if ((!strncmp(path, "flash0:/vsh/module/", 19))){
+        // Copy data from 19 onwards into string
 		if(model == 4)	{
 			sprintf(usermem, "ef0:/PSP/VSH/%s", path + 19); // flash0:/vsh/module/
 		} else {
