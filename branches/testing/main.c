@@ -29,7 +29,6 @@
 #include "logger.h"
 #include "blacklist.h"
 #include "resolver.h"
-#include "moduleinfo.h"
 #include "hook.h"
 
 PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
