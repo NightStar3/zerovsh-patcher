@@ -237,8 +237,8 @@ int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
 	zeroCtrlWriteDebug("unknown file extension\n\n");
 	return IoGetstat(arg, file, stat);
 }
-
-int zeroCtrlHookDriver() {
+//OK
+int zeroCtrlHookDriver(void) {
 	int intr;
 
 	fatms = sctrlHENFindDriver( model == 4 ? "fatef" : "fatms");
@@ -279,50 +279,6 @@ int zeroCtrlHookDriver() {
 
 	return 1;
 }
-
-//OK
-void zeroCtrlPatchBuffer(const char *modname, SceModule2 *mod) {
-	SceUID fd;
-	int ret, size;
-
-	char *usermem = zeroCtrlAllocUserBuffer(256);
-
-	if (model == 4) {
-		sprintf(usermem, "ef0:/PSP/VSH/%s", modname);
-	} else {
-		sprintf(usermem, "ms0:/PSP/VSH/%s", modname);
-	}
-
-	zeroCtrlWriteDebug("Newfile: %s\n", usermem);
-	fd = sceIoOpen(usermem, PSP_O_RDONLY, 0777);
-
-	if (fd < 0) {
-		zeroCtrlWriteDebug("Unable to open file\n\n");
-		return;
-	}
-
-	size = sceIoLseek(fd, 0, PSP_SEEK_END);
-	sceIoLseek(fd, 0, PSP_SEEK_SET);
-
-	if (!size) {
-		zeroCtrlWriteDebug("Unable to get file size\n\n");
-		sceIoClose(fd);
-		return;
-	}
-
-	ret = sceIoRead(fd, (void *) mod->text_addr, size);
-
-	if (ret < size) {
-		zeroCtrlWriteDebug("Unable to write buffer\n\n");
-		sceIoClose(fd);
-		return;
-	}
-
-	zeroCtrlWriteDebug("Patched buffers\n\n");
-	sceIoClose(fd);
-	ClearCaches();
-}
-
 //The 2nd arg is a SceLoadCoreExecFileInfo *, but we don't need it for now
 int zeroCtrlModuleProbe(void *data, void *exec_info) {
 	char filename[256];
@@ -330,6 +286,8 @@ int zeroCtrlModuleProbe(void *data, void *exec_info) {
 	SceSize size;
 
 	char *modname = (char *)data + (((u32 *)data)[0x10] & 0x7FFFFFFF) + 4;
+
+	zeroCtrlSetBlackListItems(modname, g_blacklist_mod, 1);
 
 	if(strcmp(modname, "vsh_module") == 0) {
 		strcpy(prxname, "vshmain.prx");
@@ -362,8 +320,8 @@ int zeroCtrlModuleProbe(void *data, void *exec_info) {
     }
     return ProbeExecutableObject(data, exec_info);
 }
-
-void zeroCtrlHookModule() {
+//OK
+void zeroCtrlHookModule(void) {
 	u32 moduleprobe_nid;
 	u32 fwver = sceKernelDevkitVersion();
 	SceModule2 *module = (SceModule2 *)sceKernelFindModuleByName("sceModuleManager");
@@ -390,20 +348,23 @@ void zeroCtrlHookModule() {
 		}
 	}
 }
-
+//OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
-	zeroCtrlResolveNids();
 	zeroCtrlInitDebug();
+	zeroCtrlResolveNids();
+	
 	zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
 	zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
 	zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
 
 	model = sceKernelGetModel();
+
 	zeroCtrlHookModule();
 	zeroCtrlHookDriver();
+
     return 0;
 }
-
+//OK
 int module_stop(SceSize args UNUSED, void *argp UNUSED) {
 	return 0;
 }
