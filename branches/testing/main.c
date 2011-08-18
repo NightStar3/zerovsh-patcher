@@ -29,6 +29,8 @@
 #include "logger.h"
 #include "blacklist.h"
 #include "resolver.h"
+#include "moduleinfo.h"
+#include "hook.h"
 
 PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
 PSP_MAIN_THREAD_ATTR(0);
@@ -47,6 +49,9 @@ SceUID memid;
 PspIoDrv *lflash;
 PspIoDrv *fatms;
 static PspIoDrvArg * ms_drv = NULL;
+STMOD_HANDLER previous = NULL;
+
+int (*ProbeExecutableObject)(void *data, void *exec_info);
 
 int (*msIoOpen)(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
 int (*msIoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
@@ -198,11 +203,13 @@ int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode, 
 }
 
 int zeroCtrlMsIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
+	// do not add logging in this function to avoid infinite recursion
 	ms_drv = arg->drv;
 	return msIoOpen(arg, file, flags, mode);
 }
 
 int zeroCtrlMsIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
+	// do not use sceIoGetstat in this function to avoid infinite recursion
 	return msIoGetstat(arg, file, stat);
 }
 
@@ -274,13 +281,126 @@ int zeroCtrlHookDriver() {
 	return 1;
 }
 
+//OK
+void zeroCtrlPatchBuffer(const char *modname, SceModule2 *mod) {
+	SceUID fd;
+	int ret, size;
+
+	char *usermem = zeroCtrlAllocUserBuffer(256);
+
+	if (model == 4) {
+		sprintf(usermem, "ef0:/PSP/VSH/%s", modname);
+	} else {
+		sprintf(usermem, "ms0:/PSP/VSH/%s", modname);
+	}
+
+	zeroCtrlWriteDebug("Newfile: %s\n", usermem);
+	fd = sceIoOpen(usermem, PSP_O_RDONLY, 0777);
+
+	if (fd < 0) {
+		zeroCtrlWriteDebug("Unable to open file\n\n");
+		return;
+	}
+
+	size = sceIoLseek(fd, 0, PSP_SEEK_END);
+	sceIoLseek(fd, 0, PSP_SEEK_SET);
+
+	if (!size) {
+		zeroCtrlWriteDebug("Unable to get file size\n\n");
+		sceIoClose(fd);
+		return;
+	}
+
+	ret = sceIoRead(fd, (void *) mod->text_addr, size);
+
+	if (ret < size) {
+		zeroCtrlWriteDebug("Unable to write buffer\n\n");
+		sceIoClose(fd);
+		return;
+	}
+
+	zeroCtrlWriteDebug("Patched buffers\n\n");
+	sceIoClose(fd);
+	ClearCaches();
+}
+
+//The 2nd arg is a SceLoadCoreExecFileInfo *, but we don't need it for now
+int zeroCtrlModuleProbe(void *data, void *exec_info) {
+	char filename[256];
+	char prxname[32];
+	SceSize size;
+
+	char *modname = (char *)data + (((u32 *)data)[0x10] & 0x7FFFFFFF) + 4;
+
+	if(strcmp(modname, "vsh_module") == 0) {
+		strcpy(prxname, "vshmain.prx");
+	} else if(strcmp(modname, "scePaf_Module") == 0) {
+		strcpy(prxname, "paf.prx");
+	} else if(strcmp(modname, "sceVshCommonGui_Module") == 0) {
+		strcpy(prxname, "common_gui.prx");
+	} else {
+		*prxname = '\0';
+	}
+
+    if(*prxname) {
+    	zeroCtrlWriteDebug("Probing: %s\n", prxname);
+    	if (model == 4) {
+    		sprintf(filename, "ef0:/PSP/VSH/%s", prxname);
+    	} else {
+    		sprintf(filename, "ms0:/PSP/VSH/%s", prxname);
+    	}
+    	SceUID fd = sceIoOpen(filename, PSP_O_RDONLY, 0644);
+    	if(fd >= 0) {
+    		zeroCtrlWriteDebug("Writting buffer\n");
+    		size = sceIoLseek(fd, 0, PSP_SEEK_END);
+    		sceIoLseek(fd, 0, PSP_SEEK_SET);
+    		sceIoRead(fd, data, size);
+    		sceIoClose(fd);
+    		ClearCaches();
+    	} else {
+    		zeroCtrlWriteDebug("%s not found, leaving buffer untouched\n", filename);
+    	}
+    }
+    return ProbeExecutableObject(data, exec_info);
+}
+
+void zeroCtrlHookModule() {
+	u32 moduleprobe_nid;
+	u32 fwver = sceKernelDevkitVersion();
+	SceModule2 *module = (SceModule2 *)sceKernelFindModuleByName("sceModuleManager");
+
+	if(module) {
+		if(fwver < 0x05000010)
+			moduleprobe_nid = 0xBF983EF2;
+		else if(fwver >= 0x05000010 && fwver <= 0x05050010) //5.00 - 5.50
+			moduleprobe_nid = 0x618C92FF;
+		else if(fwver == 0x06020010) //6.20
+			moduleprobe_nid = 0xB95FA50D;
+		else if(fwver >= 0x06030510 && fwver < 0x06040010) //6.35 - 6.39
+			moduleprobe_nid = 0x7B411250;
+		else if(fwver >= 0x06060010 && fwver < 0x06070010) //6.60
+			moduleprobe_nid = 0x41D10899;
+		else
+			moduleprobe_nid = 0xDEADC0DE;
+
+		ProbeExecutableObject = (void *)sctrlHENFindFunction("sceLoaderCore", "LoadCoreForKernel", moduleprobe_nid);
+		if(hook_import_bynid(module, "LoadCoreForKernel", moduleprobe_nid, zeroCtrlModuleProbe, 0) < 0) {
+			zeroCtrlWriteDebug("failed to hook function, nid: %08X\n", moduleprobe_nid);
+		} else {
+			zeroCtrlWriteDebug("hook success: ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)ProbeExecutableObject);
+		}
+	}
+}
+
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
-	sceIoAssign("ms0:", "msstor0p1:", "fatms0:", IOASSIGN_RDWR, NULL, 0);
 	zeroCtrlResolveNids();
+	zeroCtrlInitDebug();
 	zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
 	zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
 	zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
+
 	model = sceKernelGetModel();
+	zeroCtrlHookModule();
 	zeroCtrlHookDriver();
     return 0;
 }

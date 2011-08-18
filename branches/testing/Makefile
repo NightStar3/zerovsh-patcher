@@ -1,5 +1,5 @@
 TARGET = zerovsh_patcher
-OBJS = main.o import.o logger.o blacklist.o resolver.o
+OBJS = main.o import.o logger.o blacklist.o resolver.o hook.o
 INCDIR =
 EXTRA_WARNS= -Wextra -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wwrite-strings -Wunreachable-code
 CFLAGS = -O2 -G0 -Wall -std=c99 $(EXTRA_WARNS)

@@ -32,9 +32,9 @@ int kwrite(const char *path, void *buffer, int buflen);
 
 #define zeroCtrlWriteDebug(format, ...) do { \
     sprintf(_buffer_log, "%s: "format, __func__, ## __VA_ARGS__); \
-	sceIoWrite(1, _buffer_log, strlen(_buffer_log)); \
+    kwrite(LOGFILE, _buffer_log, strlen(_buffer_log)); \
 } while(0)
-	//kwrite(LOGFILE, _buffer_log, strlen(_buffer_log));
+	//sceIoWrite(1, _buffer_log, strlen(_buffer_log));
 #else
 
 #define zeroCtrlInitDebug()

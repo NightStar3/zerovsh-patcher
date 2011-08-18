@@ -33,7 +33,7 @@ int kwrite(const char *path, void *buffer, int buflen) {
     int closed = 0;
     int k1 = pspSdkSetK1(0);
     if(debug_fd < 0) {
-    	zeroCtrlInitDebug();
+    	debug_fd = sceIoOpen(path, PSP_O_CREAT | PSP_O_APPEND | PSP_O_WRONLY, 0777);
     	closed = 1;
     }
     if(debug_fd >= 0) {
