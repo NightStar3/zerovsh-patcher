@@ -28,6 +28,7 @@
 u32 sctrlHENFindFunction(const char *modname, const char *libname, u32 nid);
 unsigned int sceKernelQuerySystemCall(void * function);
 
+u32 moduleprobe_nid;
 
 nid nids[] =
 {
@@ -63,11 +64,20 @@ nid nids[] =
 			0xF153B371,
     		(u32)sceKernelQuerySystemCall,
     },
+	{
+			0xBF983EF2,
+			0x618C92FF,
+			0xB95FA50D,
+			0x7B411250,
+			0x41D10899,
+			(u32)sceKernelProbeExecutableObject,
+	},
 };
 
 libname libs[] = {
 		{ "sceSystemMemoryManager", "SysMemForKernel"          , 3 },
 		{ "sceInterruptManager"   , "InterruptManagerForKernel", 4 },
+		{ "sceLoaderCore"		  , "LoadCoreForKernel"		   , 5 },
 };
 
 void zeroCtrlResolveNids(void) {
@@ -101,6 +111,12 @@ void zeroCtrlResolveNids(void) {
 			zeroCtrlWriteDebug("Cannot find address for nid: %08X\n", fw_nid);
 			continue;
 		}
+
+		if((!strcmp(libs[count].prxname, "sceLoaderCore")) && 
+		   (!strcmp(libs[count].name, "LoadCoreForKernel"))) {
+			   moduleprobe_nid = fw_nid;
+		}
+
 		MAKE_JUMP(nids[i].stub, func);
 		_sw(0, nids[i].stub + 4); // NOP
 		sceKernelDcacheWritebackInvalidateRange((const void *)nids[i].stub, 8);

@@ -318,33 +318,17 @@ int zeroCtrlModuleProbe(void *data, void *exec_info) {
     		zeroCtrlWriteDebug("%s not found, leaving buffer untouched\n", filename);
     	}
     }
-    return ProbeExecutableObject(data, exec_info);
+    return sceKernelProbeExecutableObject(data, exec_info);
 }
 //OK
-void zeroCtrlHookModule(void) {
-	u32 moduleprobe_nid;
-	u32 fwver = sceKernelDevkitVersion();
+void zeroCtrlHookModule(void) {	
 	SceModule2 *module = (SceModule2 *)sceKernelFindModuleByName("sceModuleManager");
 
 	if(module) {
-		if(fwver < 0x05000010)
-			moduleprobe_nid = 0xBF983EF2;
-		else if(fwver >= 0x05000010 && fwver <= 0x05050010) //5.00 - 5.50
-			moduleprobe_nid = 0x618C92FF;
-		else if(fwver == 0x06020010) //6.20
-			moduleprobe_nid = 0xB95FA50D;
-		else if(fwver >= 0x06030510 && fwver < 0x06040010) //6.35 - 6.39
-			moduleprobe_nid = 0x7B411250;
-		else if(fwver >= 0x06060010 && fwver < 0x06070010) //6.60
-			moduleprobe_nid = 0x41D10899;
-		else
-			moduleprobe_nid = 0xDEADC0DE;
-
-		ProbeExecutableObject = (void *)sctrlHENFindFunction("sceLoaderCore", "LoadCoreForKernel", moduleprobe_nid);
 		if(hook_import_bynid(module, "LoadCoreForKernel", moduleprobe_nid, zeroCtrlModuleProbe, 0) < 0) {
 			zeroCtrlWriteDebug("failed to hook function, nid: %08X\n", moduleprobe_nid);
 		} else {
-			zeroCtrlWriteDebug("hook success: ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)ProbeExecutableObject);
+			zeroCtrlWriteDebug("hook success: ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)sceKernelProbeExecutableObject);
 		}
 	}
 }

@@ -37,6 +37,8 @@ typedef struct {
 	u32 count;
 } libname;
 
+u32 moduleprobe_nid;
+
 void zeroCtrlResolveNids(void);
 
 #endif /* RESOLVER_H_ */
