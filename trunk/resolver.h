@@ -20,6 +20,8 @@
 
 #include <psptypes.h>
 
+#define ITEMSOF(arr) (sizeof(arr) / sizeof(0[arr]))
+
 typedef struct {
 	u32 nidsha1;
 	u32 nid5xx;
@@ -30,10 +32,12 @@ typedef struct {
 } nid;
 
 typedef struct {
-	char *prxname;
-	char *name;
-	int count;
+	const char *prxname;
+	const char *name;
+	u32 count;
 } libname;
+
+u32 moduleprobe_nid;
 
 void zeroCtrlResolveNids(void);
 
