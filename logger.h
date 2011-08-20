@@ -34,7 +34,7 @@ int kwrite(const char *path, void *buffer, int buflen);
     sprintf(_buffer_log, "%s: "format, __func__, ## __VA_ARGS__); \
     kwrite(LOGFILE, _buffer_log, strlen(_buffer_log)); \
 } while(0)
-
+	//sceIoWrite(1, _buffer_log, strlen(_buffer_log));
 #else
 
 #define zeroCtrlInitDebug()

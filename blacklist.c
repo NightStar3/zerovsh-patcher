@@ -24,7 +24,7 @@ int g_blacklisted = 0;
 
 
 //OK
-void zeroCtrlSetBlackListItems(char *item, char *list[], int nitems)
+void zeroCtrlSetBlackListItems(char *item, const char *list[], int nitems)
 {
 	int i;
 

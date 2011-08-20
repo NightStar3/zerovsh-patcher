@@ -175,7 +175,7 @@ int sceKernelModuleCount(void);
  * Invalidate the CPU's instruction cache.
  */
 void sceKernelIcacheClearAll(void);
-
+int sceKernelProbeExecutableObject(void *data, void *exec_info);
 /*@}*/
 
 #ifdef __cplusplus

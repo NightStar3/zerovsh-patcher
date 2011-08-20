@@ -6,16 +6,4 @@ PSP_EXPORT_FUNC_HASH(module_stop)
 PSP_EXPORT_VAR_HASH(module_info)
 PSP_EXPORT_END
 
-PSP_EXPORT_START(ZeroCtrlForUser, 0, 0x4001)
-PSP_EXPORT_FUNC(sceIoOpen_patched)
-PSP_EXPORT_FUNC(sceIoGetstat_patched)
-PSP_EXPORT_FUNC(vshKernelLoadModuleVSH_patched)
-PSP_EXPORT_END
-
-PSP_EXPORT_START(ZeroCtrlForKernel, 0, 0x0001)
-PSP_EXPORT_FUNC(sceIoOpen_patched)
-PSP_EXPORT_FUNC(sceIoGetstat_patched)
-PSP_EXPORT_FUNC(vshKernelLoadModuleVSH_patched)
-PSP_EXPORT_END
-
 PSP_END_EXPORTS

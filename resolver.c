@@ -25,9 +25,10 @@
 
 #define MAKE_JUMP(a, f) _sw(0x08000000 | (((u32)(f) & 0x0ffffffc) >> 2), a);
 
-u32 sctrlHENFindFunction(char *modname, char *libname, u32 nid);
+u32 sctrlHENFindFunction(const char *modname, const char *libname, u32 nid);
 unsigned int sceKernelQuerySystemCall(void * function);
 
+u32 moduleprobe_nid;
 
 nid nids[] =
 {
@@ -63,11 +64,20 @@ nid nids[] =
 			0xF153B371,
     		(u32)sceKernelQuerySystemCall,
     },
+	{
+			0xBF983EF2,
+			0x618C92FF,
+			0xB95FA50D,
+			0x7B411250,
+			0x41D10899,
+			(u32)sceKernelProbeExecutableObject,
+	},
 };
 
 libname libs[] = {
 		{ "sceSystemMemoryManager", "SysMemForKernel"          , 3 },
 		{ "sceInterruptManager"   , "InterruptManagerForKernel", 4 },
+		{ "sceLoaderCore"		  , "LoadCoreForKernel"		   , 5 },
 };
 
 void zeroCtrlResolveNids(void) {
@@ -78,29 +88,35 @@ void zeroCtrlResolveNids(void) {
 
 	fw_version = sceKernelDevkitVersion();
 
-	for(int i = 0; i < sizeof(nids) / sizeof(nid); i++) {
+	for(u32 i = 0; i < ITEMSOF(nids); i++) {
 		if(i == libs[count].count) {
 			count++;
 		}
 		if(fw_version <= 0x03050210) {
 			fw_nid = nids[i].nidsha1;
-		} else if((fw_version >= 0x05000010) & (fw_version <= 0x05050010)) {
+		} else if((fw_version >= 0x05000010) && (fw_version <= 0x05050010)) {
 			fw_nid = nids[i].nid5xx;		 
 		} else if(fw_version == 0x06020010) {
 			fw_nid = nids[i].nid620;
-		} else if((fw_version >= 0x06030010) & (fw_version <= 0x06030910)) {
+		} else if((fw_version >= 0x06030010) && (fw_version <= 0x06030910)) {
 			fw_nid = nids[i].nid63x;
 		} else if(fw_version == 0x06060010) {
 			fw_nid = nids[i].nid660;
 		} else {
 			return;
 		}
-		zeroCtrlWriteDebug("Searching for %s, %s, %08X\n", libs[count].prxname, libs[count].name, fw_nid);
+		//zeroCtrlWriteDebug("Searching for %s, %s, %08X\n", libs[count].prxname, libs[count].name, fw_nid);
 		func = sctrlHENFindFunction(libs[count].prxname, libs[count].name, fw_nid);
 		if(!func) {
 			zeroCtrlWriteDebug("Cannot find address for nid: %08X\n", fw_nid);
 			continue;
 		}
+
+		if((!strcmp(libs[count].prxname, "sceLoaderCore")) && 
+		   (!strcmp(libs[count].name, "LoadCoreForKernel"))) {
+			   moduleprobe_nid = fw_nid;
+		}
+
 		MAKE_JUMP(nids[i].stub, func);
 		_sw(0, nids[i].stub + 4); // NOP
 		sceKernelDcacheWritebackInvalidateRange((const void *)nids[i].stub, 8);
