@@ -1,6 +1,6 @@
 ZeroVSH Patcher v0.1 - NightStar3 and codestation
 
-ZeroVSH Patcher is a plugin that allows users to customize their PSP the the 
+ZeroVSH Patcher is a plugin that allows users to customize their PSP to the 
 fullest extent without writting to the flash0. ZeroVSH Patcher redirects the
 loading of various file types from flash to your memory stick or internal storage, 
 thus removing the fear of bricking.
