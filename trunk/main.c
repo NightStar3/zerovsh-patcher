@@ -40,7 +40,7 @@ const char *g_blacklist_mod[] = {
 		"sceHVNetfront_Module"
 };
 
-const char *exts[] = { ".rco", ".pmf", ".bmp", ".pgf", ".prx" };
+const char *exts[] = { ".rco", ".pmf", ".bmp", ".pgf", ".prx", ".dat" };
 
 int k1, model;
 SceUID memid;
@@ -122,6 +122,7 @@ char *zeroCtrlGetFileType(const char *file) {
     return ret;
 }
 char *zeroCtrlSwapFile(const char *file, const char *ext) {
+	char *ret = NULL;
 	char *usermem = zeroCtrlAllocUserBuffer(256);
 
     if(!usermem) {
@@ -138,6 +139,20 @@ char *zeroCtrlSwapFile(const char *file, const char *ext) {
 	else if ((!strcmp(ext, ".pgf")) && (!zeroCtrlIsBlacklistedFound())) {
         // Copy data from 6 onwards into string
 		sprintf(usermem, "/PSP/VSH/%s", file + 6); // /font/
+	} else if (!strcmp(ext, ".dat")) {
+
+	        zeroCtrlWriteDebug(".dat detected: %s\n", file);
+	        if ((!strncmp(file, "/vsh/etc/", 9))) {
+	            // Copy data from 4 onwards into string
+	            sprintf(usermem, "/PSP/VSH/%s", file + 9); // /vsh/etc/
+	            ret = usermem;
+	            zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+	        } else if ((!strncmp(file, "/vsh/resource/", 14))) {
+	            // Copy data from 12 onwards into string
+	            sprintf(usermem, "/PSP/VSH/%s", file + 14); // /vsh/resource/
+	            ret = usermem;
+	            zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+	        }
     } else if ((!strcmp(ext, ".prx"))) {
     	if ((!strncmp(file, "/kd/", 4))) {
 			// Copy data from 4 onwards into string
@@ -212,32 +227,33 @@ int zeroCtrlMsIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat)
 
 int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
 	char *ext = zeroCtrlGetFileType(file);
-	if(ext != NULL) {
+	if(ms_drv && ext != NULL) {
 		for(u32 i = 0; i < ITEMSOF(exts); i++) {
 			if(strcmp(ext, exts[i]) == 0) {
 				return zeroCtrlIoOpenEX(arg, file, flags, mode, ext);
 			}
 		}
+		zeroCtrlWriteDebug("unknown file extension: %s\n\n", ext);
 	}
-	zeroCtrlWriteDebug("unknown file extension\n\n");
 	return IoOpen(arg, file, flags, mode);
 }
 
 int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
 	char *ext = zeroCtrlGetFileType(file);
-	if(ext != NULL) {
+	if(ms_drv && ext != NULL) {
 		for(u32 i = 0; i < ITEMSOF(exts); i++) {
 			if(strcmp(ext, exts[i]) == 0) {
 				return zeroCtrlIoGetstatEX(arg, file, stat, ext);
 			}
 		}
+		zeroCtrlWriteDebug("unknown file extension: %s\n\n", ext);
 	}
-	zeroCtrlWriteDebug("unknown file extension\n\n");
 	return IoGetstat(arg, file, stat);
 }
 //OK
 int zeroCtrlHookDriver(void) {
 	int intr;
+	SceUID fd;
 
 	fatms = sctrlHENFindDriver( model == 4 ? "fatef" : "fatms");
 	lflash = sctrlHENFindDriver("flashfat");
@@ -251,10 +267,9 @@ int zeroCtrlHookDriver(void) {
 		msIoOpen = fatms->funcs->IoOpen;
 		msIoGetstat = fatms->funcs->IoGetstat;
 	}
-
 	IoOpen = lflash->funcs->IoOpen;
 	IoGetstat = lflash->funcs->IoGetstat;
-
+	zeroCtrlWriteDebug("suspending interrupts\n");
 	intr = sceKernelCpuSuspendIntr();
 
 	if(fatms) {
@@ -267,11 +282,11 @@ int zeroCtrlHookDriver(void) {
 
 	sceKernelCpuResumeIntr(intr);
 	ClearCaches();
-
-	if(model == 4) {
-		sceIoOpen( "ef0:/_dummy.prx", PSP_O_RDONLY, 0644 );
-	} else {
-		sceIoOpen( "ms0:/_dummy.prx", PSP_O_RDONLY, 0644 );
+	zeroCtrlWriteDebug("interrupts restored\n");
+	fd = sceIoOpen( model == 4 ? "ef0:/_dummy.prx" : "ms0:/_dummy.prx", PSP_O_RDONLY, 0644 );
+	if(fd >= 0) {
+		// just in case that someone has a file like this
+		sceIoClose(fd);
 	}
 	zeroCtrlWriteDebug("ms_drv addr: %08X\n", (u32)ms_drv);
 
