@@ -135,36 +135,44 @@ char *zeroCtrlSwapFile(const char *file, const char *ext) {
     if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
         // Copy data from 14 onwards into string
 		sprintf(usermem, "/PSP/VSH/%s", file + 14); // /vsh/resource/
+		ret = usermem;
     }
 	else if ((!strcmp(ext, ".pgf")) && (!zeroCtrlIsBlacklistedFound())) {
         // Copy data from 6 onwards into string
 		sprintf(usermem, "/PSP/VSH/%s", file + 6); // /font/
+		ret = usermem;
 	} else if (!strcmp(ext, ".dat")) {
-
-	        zeroCtrlWriteDebug(".dat detected: %s\n", file);
-	        if ((!strncmp(file, "/vsh/etc/", 9))) {
-	            // Copy data from 4 onwards into string
-	            sprintf(usermem, "/PSP/VSH/%s", file + 9); // /vsh/etc/
-	            ret = usermem;
-	            zeroCtrlWriteDebug("using %s as redirect\n", usermem);
-	        } else if ((!strncmp(file, "/vsh/resource/", 14))) {
-	            // Copy data from 12 onwards into string
-	            sprintf(usermem, "/PSP/VSH/%s", file + 14); // /vsh/resource/
-	            ret = usermem;
-	            zeroCtrlWriteDebug("using %s as redirect\n", usermem);
-	        }
+		if ((!strncmp(file, "/vsh/etc/", 9))) {
+			// Copy data from 9 onwards into string
+			sprintf(usermem, "/PSP/VSH/%s", file + 9); // /vsh/etc/
+			ret = usermem;
+			zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+		} else if ((!strncmp(file, "/vsh/resource/", 14))) {
+			// Copy data from 14 onwards into string
+			sprintf(usermem, "/PSP/VSH/%s", file + 14); // /vsh/resource/
+			ret = usermem;
+			zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+		// redirecting /codepage/cptbl.dat is troublesome so is best to skip it
+//		} else if ((!strncmp(file, "/codepage/", 10))) {
+//			// Copy data from 10 onwards into string
+//			sprintf(usermem, "/PSP/VSH/%s", file + 10); // /codepage/
+//			ret = usermem;
+//			zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+		}
     } else if ((!strcmp(ext, ".prx"))) {
     	if ((!strncmp(file, "/kd/", 4))) {
 			// Copy data from 4 onwards into string
 			sprintf(usermem, "/PSP/VSH/%s", file + 4); // /kd/
+			ret = usermem;
 		} else if ((!strncmp(file, "/vsh/module/", 12))) {
 			// Copy data from 12 onwards into string
 			sprintf(usermem, "/PSP/VSH/%s", file + 12); // /vsh/module/
+			ret = usermem;
 		}
     }
     pspSdkSetK1(k1);
     zeroCtrlWriteDebug("new file: %s\n", usermem);
-	return usermem;
+	return ret;
 }
 //OK
 int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat, const char *ext) {
