@@ -1,11 +1,9 @@
 TARGET = zerovsh_patcher
-OBJS = main.o import.o logger.o blacklist.o resolver.o hook.o
+OBJS = main.o import.o logger.o blacklist.o resolver.o hook.o minini/minIni.o
 INCDIR =
 EXTRA_WARNS= -Wextra -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wwrite-strings -Wunreachable-code
-CFLAGS = -O2 -G0 -Wall -std=c99 $(EXTRA_WARNS)
-
-#all:
-#	-psp-packer zerovsh_patcher.prx zerovsh_patcher.prx
+MININI_DEFINES = -DNDEBUG -DINI_READONLY -DINI_FILETYPE=SceUID -DPORTABLE_STRNICMP -DINI_NOFLOAT
+CFLAGS = -O2 -G0 -Wall -std=c99 $(EXTRA_WARNS) $(MININI_DEFINES)
 
 ifeq ($(DEBUG), 1)
 CFLAGS+=-DDEBUG
