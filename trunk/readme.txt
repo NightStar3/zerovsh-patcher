@@ -1,4 +1,4 @@
-ZeroVSH Patcher v0.1 - NightStar3 and codestation
+ZeroVSH Patcher v0.2 - NightStar3 and codestation
 
 ZeroVSH Patcher is a plugin that allows users to customize their PSP to the 
 fullest extent without writting to the flash0. ZeroVSH Patcher redirects the
@@ -28,8 +28,12 @@ File types supported:
 * Resources - .rco
 * Gameboots - .pmf
 * Modules - .prx
+* default theme - .dat
 * (more to come hopefully)
 
 Changelog
+v0.2:
+[+] dat file support
+[+] Added config support: zerovsh.ini
 v0.1:
 [+]First release.
