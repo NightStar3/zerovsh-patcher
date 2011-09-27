@@ -30,6 +30,7 @@
 #include "blacklist.h"
 #include "resolver.h"
 #include "hook.h"
+#include "minini/minIni.h"
 
 PSP_MODULE_INFO("ZeroVSH_Patcher_Module", PSP_MODULE_KERNEL, 0, 1);
 PSP_MAIN_THREAD_ATTR(0);
@@ -42,6 +43,8 @@ const char *g_blacklist_mod[] = {
 
 const char *exts[] = { ".rco", ".pmf", ".bmp", ".pgf", ".prx", ".dat" };
 
+enum ext { EXT_RCO, EXT_PMF, EXT_BMP, EXT_PGF, EXT_PRX, EXT_DAT };
+
 int k1, model;
 SceUID memid;
 
@@ -49,6 +52,8 @@ PspIoDrv *lflash;
 PspIoDrv *fatms;
 static PspIoDrvArg * ms_drv = NULL;
 STMOD_HANDLER previous = NULL;
+
+static char redir_path[128];
 
 int (*msIoOpen)(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
 int (*msIoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
@@ -121,8 +126,7 @@ char *zeroCtrlGetFileType(const char *file) {
 
     return ret;
 }
-char *zeroCtrlSwapFile(const char *file, const char *ext) {
-	char *ret = NULL;
+char *zeroCtrlSwapFile(const char *file, int ext) {
 	char *usermem = zeroCtrlAllocUserBuffer(256);
 
     if(!usermem) {
@@ -130,52 +134,52 @@ char *zeroCtrlSwapFile(const char *file, const char *ext) {
     	return NULL;
     }
 
+    *usermem = '\0';
     k1 = pspSdkSetK1(0);
 
-    if ((!strcmp(ext, ".rco")) | (!strcmp(ext, ".pmf")) | (!strcmp(ext, ".bmp"))) {
-        // Copy data from 14 onwards into string
-		sprintf(usermem, "/PSP/VSH/%s", file + 14); // /vsh/resource/
-		ret = usermem;
-    }
-	else if ((!strcmp(ext, ".pgf")) && (!zeroCtrlIsBlacklistedFound())) {
-        // Copy data from 6 onwards into string
-		sprintf(usermem, "/PSP/VSH/%s", file + 6); // /font/
-		ret = usermem;
-	} else if (!strcmp(ext, ".dat")) {
+    switch (ext) {
+	case EXT_RCO:
+	case EXT_PMF:
+	case EXT_BMP:
+		sprintf(usermem, "%s/%s", redir_path, file + 14); // /vsh/resource/
+		break;
+	case EXT_PGF:
+		if (!zeroCtrlIsBlacklistedFound()) {
+			sprintf(usermem, "%s/%s", redir_path, file + 6); // /font/
+		}
+		break;
+	case EXT_PRX:
+		if ((!strncmp(file, "/kd/", 4))) {
+			// Copy data from 4 onwards into string
+			sprintf(usermem, "%s/%s", redir_path, file + 4); // /kd/
+		} else if ((!strncmp(file, "/vsh/module/", 12))) {
+			// Copy data from 12 onwards into string
+			sprintf(usermem, "%s/%s", redir_path, file + 12); // /vsh/module/
+		}
+		break;
+	case EXT_DAT:
 		if ((!strncmp(file, "/vsh/etc/", 9))) {
 			// Copy data from 9 onwards into string
-			sprintf(usermem, "/PSP/VSH/%s", file + 9); // /vsh/etc/
-			ret = usermem;
-			zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+			sprintf(usermem, "%s/%s", redir_path, file + 9); // /vsh/etc/
 		} else if ((!strncmp(file, "/vsh/resource/", 14))) {
 			// Copy data from 14 onwards into string
-			sprintf(usermem, "/PSP/VSH/%s", file + 14); // /vsh/resource/
-			ret = usermem;
-			zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+			sprintf(usermem, "%s/%s", redir_path, file + 14); // /vsh/resource/
 		// redirecting /codepage/cptbl.dat is troublesome so is best to skip it
 //		} else if ((!strncmp(file, "/codepage/", 10))) {
 //			// Copy data from 10 onwards into string
-//			sprintf(usermem, "/PSP/VSH/%s", file + 10); // /codepage/
-//			ret = usermem;
-//			zeroCtrlWriteDebug("using %s as redirect\n", usermem);
+//			sprintf(usermem, "%s/%s", redir_path, file + 10); // /codepage/
 		}
-    } else if ((!strcmp(ext, ".prx"))) {
-    	if ((!strncmp(file, "/kd/", 4))) {
-			// Copy data from 4 onwards into string
-			sprintf(usermem, "/PSP/VSH/%s", file + 4); // /kd/
-			ret = usermem;
-		} else if ((!strncmp(file, "/vsh/module/", 12))) {
-			// Copy data from 12 onwards into string
-			sprintf(usermem, "/PSP/VSH/%s", file + 12); // /vsh/module/
-			ret = usermem;
-		}
-    }
+		break;
+	}
     pspSdkSetK1(k1);
-    zeroCtrlWriteDebug("new file: %s\n", usermem);
-	return ret;
+    if(*usermem) {
+    	zeroCtrlWriteDebug("redirected file: %s\n", usermem);
+    	return usermem;
+    }
+	return NULL;
 }
 //OK
-int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat, const char *ext) {
+int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat, int ext) {
 	int ret;
 	PspIoDrvArg *drv;
 	char *new_path = zeroCtrlSwapFile(file, ext);
@@ -199,7 +203,7 @@ int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat,
     return ret;
 }
 //OK
-int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode, const char *ext) {
+int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode, int ext) {
 	int ret;
 	PspIoDrvArg *drv;
 	char *new_path = zeroCtrlSwapFile(file, ext);
@@ -238,7 +242,7 @@ int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
 	if(ms_drv && ext != NULL) {
 		for(u32 i = 0; i < ITEMSOF(exts); i++) {
 			if(strcmp(ext, exts[i]) == 0) {
-				return zeroCtrlIoOpenEX(arg, file, flags, mode, ext);
+				return zeroCtrlIoOpenEX(arg, file, flags, mode, i);
 			}
 		}
 		zeroCtrlWriteDebug("unknown file extension: %s\n\n", ext);
@@ -251,7 +255,7 @@ int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
 	if(ms_drv && ext != NULL) {
 		for(u32 i = 0; i < ITEMSOF(exts); i++) {
 			if(strcmp(ext, exts[i]) == 0) {
-				return zeroCtrlIoGetstatEX(arg, file, stat, ext);
+				return zeroCtrlIoGetstatEX(arg, file, stat, i);
 			}
 		}
 		zeroCtrlWriteDebug("unknown file extension: %s\n\n", ext);
@@ -322,11 +326,7 @@ int zeroCtrlModuleProbe(void *data, void *exec_info) {
 
     if(*prxname) {
     	zeroCtrlWriteDebug("Probing: %s\n", prxname);
-    	if (model == 4) {
-    		sprintf(filename, "ef0:/PSP/VSH/%s", prxname);
-    	} else {
-    		sprintf(filename, "ms0:/PSP/VSH/%s", prxname);
-    	}
+    	sprintf(filename, "%s%s/%s", model == 4 ? "ef0:" : "ms0:", redir_path, prxname);
     	SceUID fd = sceIoOpen(filename, PSP_O_RDONLY, 0644);
     	if(fd >= 0) {
     		zeroCtrlWriteDebug("Writting buffer\n");
@@ -358,11 +358,15 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	zeroCtrlInitDebug();
 	zeroCtrlResolveNids();
 	
-	zeroCtrlWriteDebug("ZeroVSH Patcher v0.1\n");
+	zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
 	zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
 	zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
 
 	model = sceKernelGetModel();
+
+	const char *config = model == 4 ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
+
+	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
 
 	zeroCtrlHookModule();
 	zeroCtrlHookDriver();
