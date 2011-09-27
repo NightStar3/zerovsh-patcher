@@ -270,31 +270,31 @@ int zeroCtrlHookDriver(void) {
 	fatms = sctrlHENFindDriver( model == 4 ? "fatef" : "fatms");
 	lflash = sctrlHENFindDriver("flashfat");
 
-	if(!lflash || !fatms) {
+	if(!lflash && !fatms) {
 		zeroCtrlWriteDebug("failed to hook drivers: lflash: %08X, fatms: %08X\n", (u32)lflash, (u32)fatms);
 		return 0;
 	}
-
-	if(fatms) {
-		msIoOpen = fatms->funcs->IoOpen;
-		msIoGetstat = fatms->funcs->IoGetstat;
-	}
+	
+	msIoOpen = fatms->funcs->IoOpen;
+	msIoGetstat = fatms->funcs->IoGetstat;
+	
 	IoOpen = lflash->funcs->IoOpen;
 	IoGetstat = lflash->funcs->IoGetstat;
+
 	zeroCtrlWriteDebug("suspending interrupts\n");
 	intr = sceKernelCpuSuspendIntr();
 
-	if(fatms) {
-		fatms->funcs->IoOpen = zeroCtrlMsIoOpen;
-		fatms->funcs->IoGetstat = zeroCtrlMsIoGetstat;
-	}
-
+	fatms->funcs->IoOpen = zeroCtrlMsIoOpen;
+	fatms->funcs->IoGetstat = zeroCtrlMsIoGetstat;
+	
 	lflash->funcs->IoOpen = zeroCtrlIoOpen;
 	lflash->funcs->IoGetstat = zeroCtrlIoGetstat;
 
 	sceKernelCpuResumeIntr(intr);
-	ClearCaches();
 	zeroCtrlWriteDebug("interrupts restored\n");
+
+	ClearCaches();
+	
 	fd = sceIoOpen( model == 4 ? "ef0:/_dummy.prx" : "ms0:/_dummy.prx", PSP_O_RDONLY, 0644 );
 	if(fd >= 0) {
 		// just in case that someone has a file like this
