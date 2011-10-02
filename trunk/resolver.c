@@ -35,49 +35,54 @@ nid nids[] =
     {
     		0x237DBD4F,
     		0x5630F321,
+            0xEA349DC6,
     		0xE5E18A99,
     		0x4621A9CC,
-			0x7158CE7E,
+            0x7158CE7E,
     		(u32)sceKernelAllocPartitionMemory,
     },
     {
     		0xB6D61D02,
     		0xAFBE8876,
+            0xE8120E5C,
     		0x093DE56A,
     		0x8FDAFC4C,
-			0xC1A26C6F,
+            0xC1A26C6F,
     		(u32)sceKernelFreePartitionMemory,
     },
     {
     		0x9D9A5BA1,
     		0x950BCB31,
+            0xFBA73BE7,
     		0xFEB5C72B,
     		0x52B54B93,
-			0xF12A62F7,
+            0xF12A62F7,
     		(u32)sceKernelGetBlockHeadAddr,
     },
     {
     		0x8B61808B,
     		0xEB988556,
+            0xFEE0E96F,
     		0xAC9306F0,
     		0x399FF74C,
-			0xF153B371,
+            0xF153B371,
     		(u32)sceKernelQuerySystemCall,
     },
 	{
-			0xBF983EF2,
-			0x618C92FF,
-			0xB95FA50D,
-			0x7B411250,
-			0x41D10899,
-			(u32)sceKernelProbeExecutableObject,
+            0xBF983EF2,
+            0x618C92FF,
+            0x41BDF7C2,
+            0xB95FA50D,
+            0x7B411250,
+            0x41D10899,
+            (u32)sceKernelProbeExecutableObject,
 	},
 };
 
 libname libs[] = {
-		{ "sceSystemMemoryManager", "SysMemForKernel"          , 3 },
-		{ "sceInterruptManager"   , "InterruptManagerForKernel", 4 },
-		{ "sceLoaderCore"		  , "LoadCoreForKernel"		   , 5 },
+                { "sceSystemMemoryManager", "SysMemForKernel"              , 3 },
+                { "sceInterruptManager"   , "InterruptManagerForKernel"    , 4 },
+                { "sceLoaderCore"         , "LoadCoreForKernel"		       , 5 },
 };
 
 void zeroCtrlResolveNids(void) {
@@ -95,7 +100,9 @@ void zeroCtrlResolveNids(void) {
 		if(fw_version <= 0x03050210) {
 			fw_nid = nids[i].nidsha1;
 		} else if((fw_version >= 0x05000010) && (fw_version <= 0x05050010)) {
-			fw_nid = nids[i].nid5xx;		 
+            fw_nid = nids[i].nid5xx;
+        } else if(fw_version == 0x05070010) {
+            fw_nid = nids[i].nid570;
 		} else if(fw_version == 0x06020010) {
 			fw_nid = nids[i].nid620;
 		} else if((fw_version >= 0x06030010) && (fw_version <= 0x06030910)) {
