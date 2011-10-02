@@ -24,7 +24,7 @@
 char _buffer_log[256];
 SceUID debug_fd = -1;
 
-void zeroCtrlInitDebug(void) {
+void zeroCtrlInitDebug(int model) {
 	debug_fd = sceIoOpen(LOGFILE, PSP_O_CREAT | PSP_O_APPEND | PSP_O_WRONLY, 0777);
 }
 

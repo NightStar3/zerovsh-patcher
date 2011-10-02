@@ -23,11 +23,11 @@
 
 #ifdef DEBUG
 
-#define LOGFILE "ms0:/PSP/VSH/debug_patcher.txt"
+#define LOGFILE "ms0:/zerovsh_log.txt"
 
 extern char _buffer_log[256];
 
-void zeroCtrlInitDebug();
+void zeroCtrlInitDebug(int model);
 int kwrite(const char *path, void *buffer, int buflen);
 
 #define zeroCtrlWriteDebug(format, ...) do { \
@@ -37,7 +37,7 @@ int kwrite(const char *path, void *buffer, int buflen);
 	//sceIoWrite(1, _buffer_log, strlen(_buffer_log));
 #else
 
-#define zeroCtrlInitDebug()
+#define zeroCtrlInitDebug(x)
 #define zeroCtrlWriteDebug(format, ...)
 // uncomment this to use the logger with psplink
 //#define zeroCtrlWriteDebug(format, ...) printf(format, ## __VA_ARGS__)

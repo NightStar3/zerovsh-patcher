@@ -20,7 +20,7 @@
 
 #include <psptypes.h>
 
-#define ITEMSOF(arr) (sizeof(arr) / sizeof(0[arr]))
+#define ITEMSOF(arr) (int)(sizeof(arr) / sizeof(0[arr]))
 
 typedef struct {
 	u32 nidsha1;
