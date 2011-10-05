@@ -377,7 +377,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 
 	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
 
-	//zeroCtrlHookModule();
+	zeroCtrlHookModule();
 	zeroCtrlHookDriver();
 
     return 0;
