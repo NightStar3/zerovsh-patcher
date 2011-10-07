@@ -53,7 +53,7 @@ nid nids[] =
     {
     		0x9D9A5BA1,
     		0x950BCB31,
-            0xFBA73BE7,
+            0x2BDA1AC9,
     		0xFEB5C72B,
     		0x52B54B93,
             0xF12A62F7,
@@ -62,7 +62,7 @@ nid nids[] =
     {
     		0x8B61808B,
     		0xEB988556,
-            0xFEE0E96F,
+            0x3D5EE53F,
     		0xAC9306F0,
     		0x399FF74C,
             0xF153B371,
