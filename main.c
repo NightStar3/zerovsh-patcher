@@ -328,7 +328,7 @@ int zeroCtrlModuleProbe(void *data, void *exec_info) {
 
 	char *modname = (char *)data + (((u32 *)data)[0x10] & 0x7FFFFFFF) + 4;
 
-	zeroCtrlSetBlackListItems(modname, g_blacklist_mod, 1);
+	zeroCtrlSetBlackListItems(modname, g_blacklist_mod);
 
 	for(int i = 0; i < ITEMSOF(g_modules_mod); i++) {
 		if(strcmp(modname, g_modules_mod[i].modname) == 0) {

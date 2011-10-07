@@ -17,20 +17,17 @@
 
 //Our header
 #include "blacklist.h"
-
+#include "resolver.h"
 
 //Global for blacklisting
 int g_blacklisted = 0;
 
 
 //OK
-void zeroCtrlSetBlackListItems(char *item, const char *list[], int nitems)
+void zeroCtrlSetBlackListItems(char *item, const char *list[])
 {
 	int i;
-
-	zeroCtrlWriteDebug("Blacklist items: %d\n", nitems);
-
-	for(i = 0; i < nitems; i++)
+	for(i = 0; i < ITEMSOF(list); i++)
 	{
 		zeroCtrlWriteDebug("-> Item %d: %s\n", i + 1, list[i]);
 
