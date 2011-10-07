@@ -110,9 +110,10 @@ void zeroCtrlResolveNids(void) {
 		} else if(fw_version == 0x06060010) {
 			fw_nid = nids[i].nid660;
 		} else {
+			zeroCtrlWriteDebug("unknown firmware version: %08X\n", fw_version);
 			return;
 		}
-		//zeroCtrlWriteDebug("Searching for %s, %s, %08X\n", libs[count].prxname, libs[count].name, fw_nid);
+
 		func = sctrlHENFindFunction(libs[count].prxname, libs[count].name, fw_nid);
 		if(!func) {
 			zeroCtrlWriteDebug("Cannot find address for nid: %08X\n", fw_nid);
