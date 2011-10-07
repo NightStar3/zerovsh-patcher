@@ -229,8 +229,7 @@ int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) 
 	char *new_path;
 	PspIoDrvArg *drv;
 
-	new_path = zeroCtrlSwapFile(file);
-	if(!new_path) {
+	if((new_path = zeroCtrlSwapFile(file)) == NULL) {
     	return IoOpen(arg, file, flags, mode);
     }
 
@@ -333,11 +332,11 @@ int zeroCtrlModuleProbe(void *data, void *exec_info) {
 
 	for(int i = 0; i < ITEMSOF(g_modules_mod); i++) {
 		if(strcmp(modname, g_modules_mod[i].modname) == 0) {
-			zeroCtrlWriteDebug("Probing: %s\n", g_modules_mod[i].modfile);
+			zeroCtrlWriteDebug("probing: %s\n", g_modules_mod[i].modfile);
 			sprintf(filename, "%s%s/%s", model == 4 ? "ef0:" : "ms0:", redir_path, g_modules_mod[i].modfile);
 			fd = sceIoOpen(filename, PSP_O_RDONLY, 0644);
 			if(fd >= 0) {
-				zeroCtrlWriteDebug("Writting buffer\n");
+				zeroCtrlWriteDebug("writting %s into buffer\n", filename);
 			    size = sceIoLseek(fd, 0, PSP_SEEK_END);
 			    sceIoLseek(fd, 0, PSP_SEEK_SET);
 			    sceIoRead(fd, data, size);
@@ -356,26 +355,27 @@ void zeroCtrlHookModule(void) {
 	SceModule2 *module = (SceModule2 *)sceKernelFindModuleByName("sceModuleManager");
 
 	if(!module || hook_import_bynid(module, "LoadCoreForKernel", moduleprobe_nid, zeroCtrlModuleProbe, 0) < 0) {
-		zeroCtrlWriteDebug("failed to hook function, nid: %08X\n", moduleprobe_nid);
+		zeroCtrlWriteDebug("failed to hook ProbeExecutableObject, nid: %08X\n", moduleprobe_nid);
 	} else {
-		zeroCtrlWriteDebug("hook success: ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)sceKernelProbeExecutableObject);
+		zeroCtrlWriteDebug("ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)sceKernelProbeExecutableObject);
 	}
 }
 //OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
 
 	model = sceKernelGetModel();
-
-	zeroCtrlInitDebug(model);
-	zeroCtrlResolveNids();
+	zeroCtrlInitDebug(model, 1, 0);
 	
 	zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
 	zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
 	zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
 
+	zeroCtrlResolveNids();
+
 	const char *config = model == 4 ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
 
 	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
+	zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path);
 
 	zeroCtrlHookModule();
 	zeroCtrlHookDriver();
