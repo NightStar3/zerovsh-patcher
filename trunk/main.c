@@ -164,7 +164,7 @@ const char *zeroCtrlGetFileName(const char *file) {
 	}
 	return ret;
 }
-
+//OK
 char *zeroCtrlSwapFile(const char *file) {
 	const char *oldfile;
 	char *newfile = zeroCtrlAllocUserBuffer(256);
@@ -184,10 +184,12 @@ char *zeroCtrlSwapFile(const char *file) {
 		return NULL;
 	}
 
-	if(zeroCtrlIsBlacklistedFound()) {
-		zeroCtrlWriteDebug("-> File is blacklisted, abort\n\n");
-		pspSdkSetK1(k1);
-		return NULL;
+	if(zeroCtrlIsBlacklistedFound()) { 
+		if(strcmp(oldfile, "/ltn0.pgf") == 0) {
+			zeroCtrlWriteDebug("-> File is blacklisted, abort\n\n");
+			pspSdkSetK1(k1);
+			return NULL;
+		}
 	}
 
     sprintf(newfile, "%s%s", redir_path, oldfile);
@@ -196,7 +198,6 @@ char *zeroCtrlSwapFile(const char *file) {
 	zeroCtrlWriteDebug("-> Redirected file: %s\n", newfile);
     return newfile;
 }
-
 //OK
 int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
 	int ret;
@@ -210,7 +211,7 @@ int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat)
 
 	drv = arg->drv;
 	arg->drv = ms_drv;
-	ret = fatms->funcs->IoGetstat(arg, new_path, stat);
+	ret = msIoGetstat(arg, new_path, stat);
 
     if (ret >= 0) {
         zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
@@ -235,7 +236,7 @@ int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) 
 
 	drv = arg->drv;
 	arg->drv = ms_drv;
-	ret = fatms->funcs->IoOpen(arg, new_path, flags, mode);
+	ret = msIoOpen(arg, new_path, flags, mode);
 
     if (ret >= 0) {
         zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
