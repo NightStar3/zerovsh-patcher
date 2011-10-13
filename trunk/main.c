@@ -38,18 +38,14 @@ PSP_MAIN_THREAD_ATTR(0);
 #define UNUSED __attribute__((unused))
 
 typedef struct {
-	const char *modname;
-	const char *modfile;
+    const char *modname;
+    const char *modfile;
 } modules;
 
-const char *g_blacklist_mod[] = {
-		"sceHVNetfront_Module"
-};
-
 modules g_modules_mod[] = {
-		{ "vsh_module",             "vshmain.prx"    },
-		{ "scePaf_Module",          "paf.prx"        },
-		{ "sceVshCommonGui_Module", "common_gui.prx" },
+        { "vsh_module", "vshmain.prx" },
+        { "scePaf_Module", "paf.prx" },
+        { "sceVshCommonGui_Module", "common_gui.prx" },
 };
 
 const char *exts[] = { ".rco", ".pmf", ".bmp", ".pgf", ".prx", ".dat" };
@@ -72,25 +68,25 @@ int (*IoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
 
 //OK
 void *zeroCtrlAllocUserBuffer(int size) {
-	void *addr;
-	k1 = pspSdkSetK1(0);
-	memid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "pathBuf", PSP_SMEM_High, size, NULL);
-	addr = (memid >= 0) ? sceKernelGetBlockHeadAddr(memid) : NULL;
-	pspSdkSetK1(k1);
-	return addr;
+    void *addr;
+    k1 = pspSdkSetK1(0);
+    memid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "pathBuf",
+            PSP_SMEM_High, size, NULL);
+    addr = (memid >= 0) ? sceKernelGetBlockHeadAddr(memid) : NULL;
+    pspSdkSetK1(k1);
+    return addr;
 }
 //OK
 void zeroCtrlFreeUserBuffer(void) {
-	if(memid >= 0) {
-		k1 = pspSdkSetK1(0);
-		sceKernelFreePartitionMemory(memid);
-		pspSdkSetK1(k1);
-	}
+    if (memid >= 0) {
+        k1 = pspSdkSetK1(0);
+        sceKernelFreePartitionMemory(memid);
+        pspSdkSetK1(k1);
+    }
 }
 //OK
-inline void zeroCtrlIcacheClearAll(void)
-{
-	__asm__ volatile("\
+inline void zeroCtrlIcacheClearAll(void) {
+    __asm__ volatile("\
 	.word 0x40088000; .word 0x24091000; .word 0x7D081240;\
 	.word 0x01094804; .word 0x4080E000; .word 0x4080E800;\
 	.word 0x00004021; .word 0xBD010000; .word 0xBD030000;\
@@ -98,9 +94,8 @@ inline void zeroCtrlIcacheClearAll(void)
 	"::);
 }
 //OK
-inline void zeroCtrlDcacheWritebackAll(void)
-{
-	__asm__ volatile("\
+inline void zeroCtrlDcacheWritebackAll(void) {
+    __asm__ volatile("\
 	.word 0x40088000; .word 0x24090800; .word 0x7D081180;\
 	.word 0x01094804; .word 0x00004021; .word 0xBD140000;\
 	.word 0xBD140000; .word 0x25080040; .word 0x1509FFFC;\
@@ -109,12 +104,12 @@ inline void zeroCtrlDcacheWritebackAll(void)
 }
 //OK
 void ClearCaches(void) {
-	zeroCtrlIcacheClearAll();
-	zeroCtrlDcacheWritebackAll();
+    zeroCtrlIcacheClearAll();
+    zeroCtrlDcacheWritebackAll();
 }
 //OK
 int zeroCtrlIsValidFileType(const char *file) {
-	int ret = 0;
+    int ret = 0;
     const char *ext;
     if (!file) {
         zeroCtrlWriteDebug("--> Is NULL\n");
@@ -127,91 +122,91 @@ int zeroCtrlIsValidFileType(const char *file) {
     if (!ext) {
         zeroCtrlWriteDebug("--> No Extension\n");
     } else {
-    	for(int i = 0; i < ITEMSOF(exts); i++) {
-    		if(strcmp(ext, exts[i]) == 0) {
-    			zeroCtrlWriteDebug("Success\n");
-    			ret = 1;
-    			break;
-    		}
-    	}
+        for (int i = 0; i < ITEMSOF(exts); i++) {
+            if (strcmp(ext, exts[i]) == 0) {
+                zeroCtrlWriteDebug("Success\n");
+                ret = 1;
+                break;
+            }
+        }
     }
     pspSdkSetK1(k1);
     return ret;
 }
 //OK
 const char *zeroCtrlGetFileName(const char *file) {
-	char *ret = NULL;
+    char *ret = NULL;
 
-	if (!file) {
-		zeroCtrlWriteDebug("--> Is NULL\n");
-		return ret;
-	}
+    if (!file) {
+        zeroCtrlWriteDebug("--> Is NULL\n");
+        return ret;
+    }
 
-	zeroCtrlWriteDebug("file: %s\n", file);
-	k1 = pspSdkSetK1(0);
-	ret = strrchr(file, '/');
-	pspSdkSetK1(k1);
+    zeroCtrlWriteDebug("file: %s\n", file);
+    k1 = pspSdkSetK1(0);
+    ret = strrchr(file, '/');
+    pspSdkSetK1(k1);
 
-	// blacklist this one
-	if(strcmp(file, "/codepage/cptbl.dat") == 0) {
-		ret = NULL;
-	}
+    // blacklist this one
+    if (strcmp(file, "/codepage/cptbl.dat") == 0) {
+        ret = NULL;
+    }
 
-	if (!ret) {
-		zeroCtrlWriteDebug("--> No path\n");
-	} else {
-		zeroCtrlWriteDebug("Success\n");
-	}
-	return ret;
+    if (!ret) {
+        zeroCtrlWriteDebug("--> No path\n");
+    } else {
+        zeroCtrlWriteDebug("Success\n");
+    }
+    return ret;
 }
 //OK
 char *zeroCtrlSwapFile(const char *file) {
-	const char *oldfile;
-	char *newfile = zeroCtrlAllocUserBuffer(256);
+    const char *oldfile;
+    char *newfile = zeroCtrlAllocUserBuffer(256);
 
-	if(!newfile) {
-	    zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
-	    return NULL;
-	}
+    if (!newfile) {
+        zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
+        return NULL;
+    }
 
-	k1 = pspSdkSetK1(0);
+    k1 = pspSdkSetK1(0);
 
-	*newfile = '\0';
-	oldfile = zeroCtrlGetFileName(file);
-	if(!oldfile) {
-		zeroCtrlWriteDebug("-> File not found, abort\n\n");
-		pspSdkSetK1(k1);
-		return NULL;
-	}
+    *newfile = '\0';
+    oldfile = zeroCtrlGetFileName(file);
+    if (!oldfile) {
+        zeroCtrlWriteDebug("-> File not found, abort\n\n");
+        pspSdkSetK1(k1);
+        return NULL;
+    }
 
-	if(zeroCtrlIsBlacklistedFound()) { 
-		if(strcmp(oldfile, "/ltn0.pgf") == 0) {
-			zeroCtrlWriteDebug("-> File is blacklisted, abort\n\n");
-			pspSdkSetK1(k1);
-			return NULL;
-		}
-	}
+    if (zeroCtrlIsBlacklistedFound()) {
+        if (strcmp(oldfile, "/ltn0.pgf") == 0) {
+            zeroCtrlWriteDebug("-> File is blacklisted, abort\n\n");
+            pspSdkSetK1(k1);
+            return NULL;
+        }
+    }
 
     sprintf(newfile, "%s%s", redir_path, oldfile);
     pspSdkSetK1(k1);
 
-	zeroCtrlWriteDebug("-> Redirected file: %s\n", newfile);
+    zeroCtrlWriteDebug("-> Redirected file: %s\n", newfile);
     return newfile;
 }
 //OK
 int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
-	int ret;
-	char *new_path;
-	PspIoDrvArg *drv;
+    int ret;
+    char *new_path;
+    PspIoDrvArg *drv;
 
-	new_path = zeroCtrlSwapFile(file);
-	if(!new_path) {
-    	return IoGetstat(arg, file, stat);
+    new_path = zeroCtrlSwapFile(file);
+    if (!new_path) {
+        return IoGetstat(arg, file, stat);
     }
 
-	drv = arg->drv;
-	arg->drv = ms_drv;
-	ret = msIoGetstat(arg, new_path, stat);
+    drv = arg->drv;
+    arg->drv = ms_drv;
+    ret = msIoGetstat(arg, new_path, stat);
 
     if (ret >= 0) {
         zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
@@ -221,22 +216,22 @@ int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat)
         ret = IoGetstat(arg, file, stat);
     }
 
-	zeroCtrlFreeUserBuffer();
+    zeroCtrlFreeUserBuffer();
     return ret;
 }
 //OK
 int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
-	int ret;
-	char *new_path;
-	PspIoDrvArg *drv;
+    int ret;
+    char *new_path;
+    PspIoDrvArg *drv;
 
-	if((new_path = zeroCtrlSwapFile(file)) == NULL) {
-    	return IoOpen(arg, file, flags, mode);
+    if ((new_path = zeroCtrlSwapFile(file)) == NULL) {
+        return IoOpen(arg, file, flags, mode);
     }
 
-	drv = arg->drv;
-	arg->drv = ms_drv;
-	ret = msIoOpen(arg, new_path, flags, mode);
+    drv = arg->drv;
+    arg->drv = ms_drv;
+    ret = msIoOpen(arg, new_path, flags, mode);
 
     if (ret >= 0) {
         zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
@@ -246,144 +241,144 @@ int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) 
         ret = IoOpen(arg, file, flags, mode);
     }
 
-	zeroCtrlFreeUserBuffer();
+    zeroCtrlFreeUserBuffer();
     return ret;
 }
 
 int zeroCtrlMsIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
-	// do not add logging in this function to avoid infinite recursion
-	ms_drv = arg->drv;
-	return msIoOpen(arg, file, flags, mode);
+    // do not add logging in this function to avoid infinite recursion
+    ms_drv = arg->drv;
+    return msIoOpen(arg, file, flags, mode);
 }
 
 int zeroCtrlMsIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
-	// do not use sceIoGetstat in this function to avoid infinite recursion
-	return msIoGetstat(arg, file, stat);
+    // do not use sceIoGetstat in this function to avoid infinite recursion
+    return msIoGetstat(arg, file, stat);
 }
 
 int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
-	if(ms_drv && zeroCtrlIsValidFileType(file)) {
-		return zeroCtrlIoOpenEX(arg, file, flags, mode);
-	} else {
-		zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
-	}
-	return IoOpen(arg, file, flags, mode);
+    if (ms_drv && zeroCtrlIsValidFileType(file)) {
+        return zeroCtrlIoOpenEX(arg, file, flags, mode);
+    } else {
+        zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
+    }
+    return IoOpen(arg, file, flags, mode);
 }
 
 int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
-	if(ms_drv && zeroCtrlIsValidFileType(file)) {
-		return zeroCtrlIoGetstatEX(arg, file, stat);
-	} else {
-		zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
-	}
-	return IoGetstat(arg, file, stat);
+    if (ms_drv && zeroCtrlIsValidFileType(file)) {
+        return zeroCtrlIoGetstatEX(arg, file, stat);
+    } else {
+        zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
+    }
+    return IoGetstat(arg, file, stat);
 }
 //OK
 int zeroCtrlHookDriver(void) {
-	int intr;
-	SceUID fd;
+    int intr;
+    SceUID fd;
 
-	fatms = sctrlHENFindDriver( model == 4 ? "fatef" : "fatms");
-	lflash = sctrlHENFindDriver("flashfat");
+    fatms = sctrlHENFindDriver(model == 4 ? "fatef" : "fatms");
+    lflash = sctrlHENFindDriver("flashfat");
 
-	if(!lflash || !fatms) {
-		zeroCtrlWriteDebug("failed to hook drivers: lflash: %08X, fatms: %08X\n", (u32)lflash, (u32)fatms);
-		return 0;
-	}
-	
-	msIoOpen = fatms->funcs->IoOpen;
-	msIoGetstat = fatms->funcs->IoGetstat;
-	
-	IoOpen = lflash->funcs->IoOpen;
-	IoGetstat = lflash->funcs->IoGetstat;
+    if (!lflash || !fatms) {
+        zeroCtrlWriteDebug("failed to hook drivers: lflash: %08X, fatms: %08X\n", (u32)lflash, (u32)fatms);
+        return 0;
+    }
 
-	zeroCtrlWriteDebug("suspending interrupts\n");
-	intr = sceKernelCpuSuspendIntr();
+    msIoOpen = fatms->funcs->IoOpen;
+    msIoGetstat = fatms->funcs->IoGetstat;
 
-	fatms->funcs->IoOpen = zeroCtrlMsIoOpen;
-	fatms->funcs->IoGetstat = zeroCtrlMsIoGetstat;
-	
-	lflash->funcs->IoOpen = zeroCtrlIoOpen;
-	lflash->funcs->IoGetstat = zeroCtrlIoGetstat;
+    IoOpen = lflash->funcs->IoOpen;
+    IoGetstat = lflash->funcs->IoGetstat;
 
-	sceKernelCpuResumeIntr(intr);
-	ClearCaches();
-	zeroCtrlWriteDebug("interrupts restored\n");
-	
-	fd = sceIoOpen( model == 4 ? "ef0:/_dummy.prx" : "ms0:/_dummy.prx", PSP_O_RDONLY, 0644);
+    zeroCtrlWriteDebug("suspending interrupts\n");
+    intr = sceKernelCpuSuspendIntr();
 
-	// just in case that someone has a file like this
-	if(fd >= 0) {
-		sceIoClose(fd);
-	}
+    fatms->funcs->IoOpen = zeroCtrlMsIoOpen;
+    fatms->funcs->IoGetstat = zeroCtrlMsIoGetstat;
 
-	zeroCtrlWriteDebug("ms_drv addr: %08X\n", (u32)ms_drv);
+    lflash->funcs->IoOpen = zeroCtrlIoOpen;
+    lflash->funcs->IoGetstat = zeroCtrlIoGetstat;
 
-	return 1;
+    sceKernelCpuResumeIntr(intr);
+    ClearCaches();
+    zeroCtrlWriteDebug("interrupts restored\n");
+
+    fd = sceIoOpen(model == 4 ? "ef0:/_dummy.prx" : "ms0:/_dummy.prx", PSP_O_RDONLY, 0644);
+
+    // just in case that someone has a file like this
+    if (fd >= 0) {
+        sceIoClose(fd);
+    }
+
+    zeroCtrlWriteDebug("ms_drv addr: %08X\n", (u32)ms_drv);
+
+    return 1;
 }
 //The 2nd arg is a SceLoadCoreExecFileInfo *, but we don't need it for now
 int zeroCtrlModuleProbe(void *data, void *exec_info) {
-	char filename[256];
-	SceSize size;
-	SceUID fd;
+    char filename[256];
+    SceSize size;
+    SceUID fd;
 
-	char *modname = (char *)data + (((u32 *)data)[0x10] & 0x7FFFFFFF) + 4;
+    char *modname = (char *) data + (((u32 *) data)[0x10] & 0x7FFFFFFF) + 4;
 
-	zeroCtrlSetBlackListItems(modname, g_blacklist_mod);
+    zeroCtrlSetBlackListItems(modname);
 
-	for(int i = 0; i < ITEMSOF(g_modules_mod); i++) {
-		if(strcmp(modname, g_modules_mod[i].modname) == 0) {
-			zeroCtrlWriteDebug("probing: %s\n", g_modules_mod[i].modfile);
-			sprintf(filename, "%s%s/%s", model == 4 ? "ef0:" : "ms0:", redir_path, g_modules_mod[i].modfile);
-			fd = sceIoOpen(filename, PSP_O_RDONLY, 0644);
-			if(fd >= 0) {
-				zeroCtrlWriteDebug("writting %s into buffer\n", filename);
-			    size = sceIoLseek(fd, 0, PSP_SEEK_END);
-			    sceIoLseek(fd, 0, PSP_SEEK_SET);
-			    sceIoRead(fd, data, size);
-			    sceIoClose(fd);
-			    ClearCaches();
-			} else {
-				zeroCtrlWriteDebug("%s not found, leaving buffer untouched\n", filename);
-			}
-			break;
-		}
-	}
+    for (int i = 0; i < ITEMSOF(g_modules_mod); i++) {
+        if (strcmp(modname, g_modules_mod[i].modname) == 0) {
+            zeroCtrlWriteDebug("probing: %s\n", g_modules_mod[i].modfile);
+            sprintf(filename, "%s%s/%s", model == 4 ? "ef0:" : "ms0:", redir_path, g_modules_mod[i].modfile);
+            fd = sceIoOpen(filename, PSP_O_RDONLY, 0644);
+            if (fd >= 0) {
+                zeroCtrlWriteDebug("writting %s into buffer\n", filename);
+                size = sceIoLseek(fd, 0, PSP_SEEK_END);
+                sceIoLseek(fd, 0, PSP_SEEK_SET);
+                sceIoRead(fd, data, size);
+                sceIoClose(fd);
+                ClearCaches();
+            } else {
+                zeroCtrlWriteDebug("%s not found, leaving buffer untouched\n", filename);
+            }
+            break;
+        }
+    }
     return sceKernelProbeExecutableObject(data, exec_info);
 }
 //OK
-void zeroCtrlHookModule(void) {	
-	SceModule2 *module = (SceModule2 *)sceKernelFindModuleByName("sceModuleManager");
+void zeroCtrlHookModule(void) {
+    SceModule2 *module = (SceModule2 *) sceKernelFindModuleByName("sceModuleManager");
 
-	if(!module || hook_import_bynid(module, "LoadCoreForKernel", moduleprobe_nid, zeroCtrlModuleProbe, 0) < 0) {
-		zeroCtrlWriteDebug("failed to hook ProbeExecutableObject, nid: %08X\n", moduleprobe_nid);
-	} else {
-		zeroCtrlWriteDebug("ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)sceKernelProbeExecutableObject);
-	}
+    if (!module || hook_import_bynid(module, "LoadCoreForKernel", moduleprobe_nid, zeroCtrlModuleProbe, 0) < 0) {
+        zeroCtrlWriteDebug("failed to hook ProbeExecutableObject, nid: %08X\n", moduleprobe_nid);
+    } else {
+        zeroCtrlWriteDebug("ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)sceKernelProbeExecutableObject);
+    }
 }
 //OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
 
-	model = sceKernelGetModel();
-	zeroCtrlInitDebug(model, 1, 0);
-	
-	zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
-	zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
-	zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
+    model = sceKernelGetModel();
+    zeroCtrlInitDebug(model, 1, 0);
 
-	zeroCtrlResolveNids();
+    zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
+    zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
+    zeroCtrlWriteDebug("http://elitepspgamerz.forummotion.com\n\n");
 
-	const char *config = model == 4 ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
+    zeroCtrlResolveNids();
 
-	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
-	zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path);
+    const char *config = (model == 4) ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
 
-	zeroCtrlHookModule();
-	zeroCtrlHookDriver();
+    ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
+    zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path);
+
+    zeroCtrlHookModule();
+    zeroCtrlHookDriver();
 
     return 0;
 }
 //OK
 int module_stop(SceSize args UNUSED, void *argp UNUSED) {
-	return 0;
+    return 0;
 }

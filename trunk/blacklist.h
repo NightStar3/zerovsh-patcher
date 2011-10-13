@@ -24,7 +24,7 @@
 //Global for blacklisting
 int g_blacklisted;
 
-void zeroCtrlSetBlackListItems(char *item, const char *list[]);
+void zeroCtrlSetBlackListItems(char *item);
 int zeroCtrlIsBlacklistedFound(void);
 
 

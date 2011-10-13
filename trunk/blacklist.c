@@ -22,29 +22,26 @@
 //Global for blacklisting
 int g_blacklisted = 0;
 
+static const char *g_blacklist_mod[] = {
+        "sceHVNetfront_Module",
+};
 
 //OK
-void zeroCtrlSetBlackListItems(char *item, const char *list[])
-{
-	int i;
-	for(i = 0; i < ITEMSOF(list); i++)
-	{
-		zeroCtrlWriteDebug("-> Item %d: %s\n", i + 1, list[i]);
+void zeroCtrlSetBlackListItems(char *item) {
+    for (int i = 0; i < ITEMSOF(g_blacklist_mod); i++) {
+        zeroCtrlWriteDebug("-> Item %d: %s\n", i + 1, g_blacklist_mod[i]);
 
-		if(!strcmp(item, list[i]))
-		{			
-			g_blacklisted = 1;
-		}
-	}	
+        if (!strcmp(item, g_blacklist_mod[i])) {
+            g_blacklisted = 1;
+        }
+    }
 }
 //OK
-int zeroCtrlIsBlacklistedFound(void)
-{
-	if(g_blacklisted == 1)
-	{
-		zeroCtrlWriteDebug("Found\n\n");
-		return 1;
-	}
+int zeroCtrlIsBlacklistedFound(void) {
+    if (g_blacklisted == 1) {
+        zeroCtrlWriteDebug("Found\n\n");
+        return 1;
+    }
 
-	return 0;
+    return 0;
 }
