@@ -33,42 +33,42 @@ u32 moduleprobe_nid;
 nid nids[] =
 {
     {
-    		0x237DBD4F,
-    		0x5630F321,
+        	0x237DBD4F,
+        	0x5630F321,
             0xEA349DC6,
-    		0xE5E18A99,
-    		0x4621A9CC,
+        	0xE5E18A99,
+        	0x4621A9CC,
             0x7158CE7E,
-    		(u32)sceKernelAllocPartitionMemory,
+        	(u32)sceKernelAllocPartitionMemory,
     },
     {
-    		0xB6D61D02,
-    		0xAFBE8876,
+        	0xB6D61D02,
+        	0xAFBE8876,
             0xE8120E5C,
-    		0x093DE56A,
-    		0x8FDAFC4C,
+        	0x093DE56A,
+        	0x8FDAFC4C,
             0xC1A26C6F,
-    		(u32)sceKernelFreePartitionMemory,
+        	(u32)sceKernelFreePartitionMemory,
     },
     {
-    		0x9D9A5BA1,
-    		0x950BCB31,
+        	0x9D9A5BA1,
+        	0x950BCB31,
             0x2BDA1AC9,
-    		0xFEB5C72B,
-    		0x52B54B93,
+        	0xFEB5C72B,
+        	0x52B54B93,
             0xF12A62F7,
-    		(u32)sceKernelGetBlockHeadAddr,
+        	(u32)sceKernelGetBlockHeadAddr,
     },
     {
-    		0x8B61808B,
-    		0xEB988556,
+        	0x8B61808B,
+        	0xEB988556,
             0x3D5EE53F,
-    		0xAC9306F0,
-    		0x399FF74C,
+        	0xAC9306F0,
+        	0x399FF74C,
             0xF153B371,
-    		(u32)sceKernelQuerySystemCall,
+        	(u32)sceKernelQuerySystemCall,
     },
-	{
+    {
             0xBF983EF2,
             0x618C92FF,
             0x41BDF7C2,
@@ -76,58 +76,58 @@ nid nids[] =
             0x7B411250,
             0x41D10899,
             (u32)sceKernelProbeExecutableObject,
-	},
+    },
 };
 
 libname libs[] = {
                 { "sceSystemMemoryManager", "SysMemForKernel"              , 3 },
                 { "sceInterruptManager"   , "InterruptManagerForKernel"    , 4 },
-                { "sceLoaderCore"         , "LoadCoreForKernel"		       , 5 },
+                { "sceLoaderCore"         , "LoadCoreForKernel"    	       , 5 },
 };
 
 void zeroCtrlResolveNids(void) {
 
-	int fw_version;
-	u32 fw_nid, func;
-	int count = 0;
+    int fw_version;
+    u32 fw_nid, func;
+    int count = 0;
 
-	fw_version = sceKernelDevkitVersion();
+    fw_version = sceKernelDevkitVersion();
 
-	for(u32 i = 0; i < ITEMSOF(nids); i++) {
-		if(i == libs[count].count) {
-			count++;
-		}
-		if(fw_version <= 0x03050210) {
-			fw_nid = nids[i].nidsha1;
-		} else if((fw_version >= 0x05000010) && (fw_version <= 0x05050010)) {
+    for(u32 i = 0; i < ITEMSOF(nids); i++) {
+    	if(i == libs[count].count) {
+    		count++;
+    	}
+    	if(fw_version <= 0x03050210) {
+    		fw_nid = nids[i].nidsha1;
+    	} else if((fw_version >= 0x05000010) && (fw_version <= 0x05050010)) {
             fw_nid = nids[i].nid5xx;
         } else if(fw_version == 0x05070010) {
             fw_nid = nids[i].nid570;
-		} else if(fw_version == 0x06020010) {
-			fw_nid = nids[i].nid620;
-		} else if((fw_version >= 0x06030010) && (fw_version <= 0x06030910)) {
-			fw_nid = nids[i].nid63x;
-		} else if(fw_version == 0x06060010) {
-			fw_nid = nids[i].nid660;
-		} else {
-			zeroCtrlWriteDebug("unknown firmware version: %08X\n", fw_version);
-			return;
-		}
+    	} else if(fw_version == 0x06020010) {
+    		fw_nid = nids[i].nid620;
+    	} else if((fw_version >= 0x06030010) && (fw_version <= 0x06030910)) {
+    		fw_nid = nids[i].nid63x;
+    	} else if(fw_version == 0x06060010) {
+    		fw_nid = nids[i].nid660;
+    	} else {
+    		zeroCtrlWriteDebug("unknown firmware version: %08X\n", fw_version);
+    		return;
+    	}
 
-		func = sctrlHENFindFunction(libs[count].prxname, libs[count].name, fw_nid);
-		if(!func) {
-			zeroCtrlWriteDebug("Cannot find address for nid: %08X\n", fw_nid);
-			continue;
-		}
+    	func = sctrlHENFindFunction(libs[count].prxname, libs[count].name, fw_nid);
+    	if(!func) {
+    		zeroCtrlWriteDebug("Cannot find address for nid: %08X\n", fw_nid);
+    		continue;
+    	}
 
-		if((!strcmp(libs[count].prxname, "sceLoaderCore")) && 
-		   (!strcmp(libs[count].name, "LoadCoreForKernel"))) {
-			   moduleprobe_nid = fw_nid;
-		}
+    	if((!strcmp(libs[count].prxname, "sceLoaderCore")) && 
+    	   (!strcmp(libs[count].name, "LoadCoreForKernel"))) {
+    		   moduleprobe_nid = fw_nid;
+    	}
 
-		MAKE_JUMP(nids[i].stub, func);
-		_sw(0, nids[i].stub + 4); // NOP
-		sceKernelDcacheWritebackInvalidateRange((const void *)nids[i].stub, 8);
-		sceKernelIcacheInvalidateRange((const void *)nids[i].stub, 8);
-	}
+    	MAKE_JUMP(nids[i].stub, func);
+    	_sw(0, nids[i].stub + 4); // NOP
+    	sceKernelDcacheWritebackInvalidateRange((const void *)nids[i].stub, 8);
+    	sceKernelIcacheInvalidateRange((const void *)nids[i].stub, 8);
+    }
 }
