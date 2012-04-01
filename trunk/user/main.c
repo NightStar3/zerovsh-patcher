@@ -124,6 +124,46 @@ int OnModuleStart(SceModule2 *mod) {
 			MAKE_CALL(mod->text_addr+0x29978, zeroCtrlAddVshItem);
 			MAKE_CALL(mod->text_addr+0x29988, zeroCtrlAddVshItem);
 			MAKE_CALL(mod->text_addr+0x2A4A8, zeroCtrlAddVshItem);			
+		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {
+			AddVshItem = (void *)(mod->text_addr+0x22608);
+			
+			//MAKE_CALL(mod->text_addr+0x20E48, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x20EBC, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x22C1C, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x22C7C, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x22CF8, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x22E60, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x239D8, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x23AB8, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x23B98, zeroCtrlAddVshItem);		
+			//MAKE_CALL(mod->text_addr+0x23C7C, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x23DDC, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A1B4, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A1C4, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A1D4, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A1E8, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A1F8, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2AD18, zeroCtrlAddVshItem);	
+		} else if(devkit == 0x06060010) {
+			AddVshItem = (void *)(mod->text_addr+0x22648);
+			
+			//MAKE_CALL(mod->text_addr+0x20E88, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x20EFC, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x22C7C, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x22CDC, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x22D5C, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x22EC0, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x23A44, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x23B24, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x23C04, zeroCtrlAddVshItem);		
+			//MAKE_CALL(mod->text_addr+0x23CE8, zeroCtrlAddVshItem);
+			//MAKE_CALL(mod->text_addr+0x23E48, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A240, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A250, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A260, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A274, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2A284, zeroCtrlAddVshItem);
+			MAKE_CALL(mod->text_addr+0x2ADA4, zeroCtrlAddVshItem);	
 		}
         }
         
@@ -131,6 +171,12 @@ int OnModuleStart(SceModule2 *mod) {
 		if(devkit == 0x06020010) {
 			AddSysconfItem = (void *)(mod->text_addr+0x27918);
 			MAKE_CALL(mod->text_addr+0x1CA3C, zeroCtrlAddSysconfItem);
+		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {
+			AddSysconfItem = (void *)(mod->text_addr+0x2828C);
+			MAKE_CALL(mod->text_addr+0x1D2BC, zeroCtrlAddSysconfItem);
+		} else if(devkit == 0x06060010) {
+			AddSysconfItem = (void *)(mod->text_addr+0x286AC);
+			MAKE_CALL(mod->text_addr+0x1D6C8, zeroCtrlAddSysconfItem);
 		}
 	}
 	
