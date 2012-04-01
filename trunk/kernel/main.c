@@ -25,7 +25,7 @@
 #include <psprtc.h>
 
 // from CFW SDK
-#include "pspmodulemgr.h"
+#include "pspmodulemgr_kernel.h"
 #include "psploadcore.h"
 #include "systemctrl.h"
 #include "systemctrl_se.h"
