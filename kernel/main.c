@@ -529,7 +529,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
     zeroCtrlInitDebug(model, 1,1);
 
     zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
-    zeroCtrlWriteDebug("Copyright 2011 (C) NightStar3 and codestation\n");
+    zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
     zeroCtrlWriteDebug("[--- Debug version ---]\n\n");
 
     zeroCtrlResolveNids();
