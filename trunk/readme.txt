@@ -5,6 +5,7 @@ fullest extent without writting to the flash0. ZeroVSH Patcher redirects the
 loading of various file types from flash to your memory stick or internal storage, 
 thus removing the fear of bricking.
 
+
 ---- How to Use ----
 
 Copy zerovsh_patcher.prx and zerovsh.ini to your seplugins folder
@@ -20,15 +21,18 @@ Then, navigate to the /slide folder and place the files slide_plugin_XXX.rco and
 RedirPath set to in zerovsh.ini (Default is (root):/PSP/VSH) and rename them to slide_plugin.rco
 and slide_plugin.prx
 
-In order to load and stop it, press the HOME button in the XMB
+NOTE: If you have a umd inserted
+-----------> When booting(returning from a game/returning from sleep mode/returning from a reset): just wait 5 seconds after your XMB icons have loaded before trying to trigger the clock and calendar
+-----------> When exiting from internet browser: wait 3 seconds before trying to trigger the clock and calendar
+
+In order to load it wait 1 second(and do not press any buttons during that time period), and press the HOME button
+In order to stop it, just press the HOME button again.
+
 
 ---- Bugs ----
 
 Prompt for disabling bluetooth when using usb or camera with clock and calendar enabled
-No umd or umd update icon appearing in XMB with clock and calendar enabled
-Taking more than one press to load the clock and calendar (just go to reset device in vsh menu and it should work fine)
-Unable to load internet browser with clock and calendar enabled (just go to reset vsh in vsh menu and it should work fine)
-Unable to load clock and calendar after using internet browser (just go to reset vsh in vsh menu and it should work fine)
+Umd, and umd update shows a blank image with clock and calendar enabled
 
 (Feel free to report new bugs)
 
@@ -39,6 +43,7 @@ You must have the pspsdk or psptoolchain set up in order to compile the plugin
 Just run the script in the trunk corresponding to your operating system, and it should compile fine
 
 The plugin will be compiled to the /bin folder in the trunk
+
 
 -- Note --
 

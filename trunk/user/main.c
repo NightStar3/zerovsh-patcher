@@ -34,6 +34,7 @@ PSP_MODULE_INFO("ZeroVSH_Patcher_User", 0x0007, 0, 1);
 
 #define UNUSED __attribute__((unused))
 #define MAKE_CALL(a, f) _sw(0x0C000000 | (((u32)(f) >> 2) & 0x03FFFFFF), a); 
+#define MAKE_JUMP(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a); _sw(0x00000000, a+4); 
 
 int devkit;
 
@@ -77,18 +78,12 @@ STMOD_HANDLER previous = NULL;
 
 int (*AddVshItem)(void *arg, int topitem, SceVshItem *item) = NULL;
 void (* AddSysconfItem)(u32 *option, SceSysconfItem **item) = NULL;
+int (*CheckDriver)(int drvbit, u32 *umd_data, u32 *a2, u32 *a3) = NULL;
 
 //OK
-int zeroCtrlAddVshItem(void *arg, int topitem, SceVshItem *item) {
-	
+int zeroCtrlAddVshItem(void *arg, int topitem, SceVshItem *item) {	
 	if(strcmp(item->text,"msg_bt_device_settings") == 0) {		
 		return 0;	
-	} else if(strcmp(item->text,"msg_em") == 0) {
-		return 0;
-	} else if(strcmp(item->text, "msgtop_game_savedata") == 0) {
-		if(item->id != 25) {			
-			return 0;
-		}
 	} 
 	
 	return AddVshItem(arg, topitem, item);
@@ -102,68 +97,44 @@ void zeroCtrlAddSysconfItem(u32 *option, SceSysconfItem **item) {
 	AddSysconfItem(option, item);
 }
 //OK
+int zeroCtrlCheckDriver(int drvbit UNUSED, u32 *umd_data, u32 *a2, u32 *a3) {
+	//0x1 == memstick
+	//0x2 == umd
+	//0x4 == usb(unused or ?)
+	//0x8 == internal flash	
+	return CheckDriver(0x1 | 0x2, umd_data, a2, a3);
+}
+//OK
+int zeroCtrlDummyFunc(void) {
+	return -1;
+}
+//OK
 int OnModuleStart(SceModule2 *mod) {       
         if(strcmp(mod->modname, "vsh_module") == 0) {
-		if(devkit == 0x06020010) {
-			AddVshItem = (void *)(mod->text_addr+0x21E18);
+		if(devkit == 0x06020010) {		
+			MAKE_JUMP(mod->text_addr+0x6CEC, zeroCtrlDummyFunc);			
 			
-			//MAKE_CALL(mod->text_addr+0x20694, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x206F8, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x2242C, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x2248C, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x22508, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x22670, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x231E8, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x232C8, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x233A8, zeroCtrlAddVshItem);		
-			//MAKE_CALL(mod->text_addr+0x2348C, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x235EC, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x29944, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x29954, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x29964, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x29978, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x29988, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A4A8, zeroCtrlAddVshItem);			
+			CheckDriver = (void *)(mod->text_addr+0x375FC);
+			MAKE_CALL(mod->text_addr+0x14580, zeroCtrlCheckDriver);					
+			
+			AddVshItem = (void *)(mod->text_addr+0x21E18);		
+			MAKE_CALL(mod->text_addr+0x206F8, zeroCtrlAddVshItem);		
 		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {
-			AddVshItem = (void *)(mod->text_addr+0x22608);
+			MAKE_JUMP(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
 			
-			//MAKE_CALL(mod->text_addr+0x20E48, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x20EBC, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x22C1C, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x22C7C, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x22CF8, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x22E60, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x239D8, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x23AB8, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x23B98, zeroCtrlAddVshItem);		
-			//MAKE_CALL(mod->text_addr+0x23C7C, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x23DDC, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A1B4, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A1C4, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A1D4, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A1E8, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A1F8, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2AD18, zeroCtrlAddVshItem);	
+			CheckDriver = (void *)(mod->text_addr+0x37EA8);
+			MAKE_CALL(mod->text_addr+0x14B9C, zeroCtrlCheckDriver);
+			
+			AddVshItem = (void *)(mod->text_addr+0x22608);			
+			MAKE_CALL(mod->text_addr+0x20EBC, zeroCtrlAddVshItem);			
 		} else if(devkit == 0x06060010) {
-			AddVshItem = (void *)(mod->text_addr+0x22648);
+			MAKE_JUMP(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
 			
-			//MAKE_CALL(mod->text_addr+0x20E88, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x20EFC, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x22C7C, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x22CDC, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x22D5C, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x22EC0, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x23A44, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x23B24, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x23C04, zeroCtrlAddVshItem);		
-			//MAKE_CALL(mod->text_addr+0x23CE8, zeroCtrlAddVshItem);
-			//MAKE_CALL(mod->text_addr+0x23E48, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A240, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A250, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A260, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A274, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2A284, zeroCtrlAddVshItem);
-			MAKE_CALL(mod->text_addr+0x2ADA4, zeroCtrlAddVshItem);	
+			CheckDriver = (void *)(mod->text_addr+0x37F34);
+			MAKE_CALL(mod->text_addr+0x14C64, zeroCtrlCheckDriver);
+			
+			AddVshItem = (void *)(mod->text_addr+0x22648);		
+			MAKE_CALL(mod->text_addr+0x20EFC, zeroCtrlAddVshItem);			
 		}
         }
         

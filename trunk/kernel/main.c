@@ -86,14 +86,8 @@ int (*IoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
 int vshImposeGetParam(u32 value);
 int vshCtrlReadBufferPositive(SceCtrlData *pad, int count);
 
-//OK
-void setSlideState(int state) {
-	_sw(state, 0x88FB0024);
-}
-//OK
-int getSlideState(void) {
-	return _lw(0x88FB0024);
-}
+int slideState;
+
 //OK
 void *zeroCtrlAllocUserBuffer(int size) {
     void *addr;
@@ -403,23 +397,20 @@ void zeroCtrlHookModule(void) {
     }
 }
 //OK
-int zeroCtrlGetModel(void) {
-        k1 = pspSdkSetK1(0);
-        zeroCtrlWriteDebug("Model[FAKE]: %d\n\n", 4);        
-        pspSdkSetK1(k1);
+int zeroCtrlGetModel(void) {       
         return 4;
 }
 //OK
 int zeroCtrlDummyFunc(void) {
         k1 = pspSdkSetK1(0);               
 	
-	if(getSlideState() == ZERO_SLIDE_STOPPING) {
+	if(slideState == ZERO_SLIDE_STOPPING) {
 		zeroCtrlWriteDebug("Unloading slide 1\n");
-		setSlideState(ZERO_SLIDE_STOPPED);
+		slideState = ZERO_SLIDE_STOPPED;
 		
 		pspSdkSetK1(k1);
 		return -1;
-	} else if(getSlideState() == ZERO_SLIDE_STOPPED) {
+	} else if(slideState == ZERO_SLIDE_STOPPED) {
 		zeroCtrlWriteDebug("Unloading slide 2\n");
 		
 		pspSdkSetK1(k1);
@@ -434,9 +425,9 @@ int zeroCtrlGetParam(u32 value) {
         k1 = pspSdkSetK1(0);
         
         if(value == 0x8000000D) {	
-		if(getSlideState() == ZERO_SLIDE_STARTING) {			
+		if(slideState == ZERO_SLIDE_STARTING) {			
 			zeroCtrlWriteDebug("Starting slide\n");			
-			setSlideState(ZERO_SLIDE_STARTED);
+			slideState = ZERO_SLIDE_STARTED;
 			
 			pspSdkSetK1(k1);
 			return 0;         
@@ -452,15 +443,15 @@ int zeroCtrlGetParam(u32 value) {
 int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
         k1 = pspSdkSetK1(0);
 	
-        if(getSlideState() == ZERO_SLIDE_STOPPED) {
+        if(slideState == ZERO_SLIDE_STOPPED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {      			
                         zeroCtrlWriteDebug("Loading slide\n");
-                        setSlideState(ZERO_SLIDE_STARTING);                     
+                        slideState = ZERO_SLIDE_STARTING;                     
                 }
-        } else if(getSlideState() == ZERO_SLIDE_STARTED) {
+        } else if(slideState == ZERO_SLIDE_STARTED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {         		
                         zeroCtrlWriteDebug("Stopping slide\n");
-                        setSlideState(ZERO_SLIDE_STOPPING);                        
+                        slideState = ZERO_SLIDE_STOPPING;                        
                 }
         }        
 	
@@ -545,7 +536,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
     zeroCtrlHookModule();
     zeroCtrlHookDriver();    
     
-    setSlideState(ZERO_SLIDE_STOPPED);
+    slideState = ZERO_SLIDE_STOPPED;
     
     if((model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
