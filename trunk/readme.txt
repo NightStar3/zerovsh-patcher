@@ -22,8 +22,8 @@ RedirPath set to in zerovsh.ini (Default is (root):/PSP/VSH) and rename them to 
 and slide_plugin.prx
 
 NOTE: If you have a umd inserted
------------> When booting(returning from a game/returning from sleep mode/returning from a reset): just wait 5 seconds after your XMB icons have loaded before trying to trigger the clock and calendar
------------> When exiting from internet browser: wait 3 seconds before trying to trigger the clock and calendar
+-----------> If the loading icon (small animation going on in the bottom right corner of your screen) is visible, wait for it to pass before
+		trying to trigger the clock and calendar
 
 In order to load it wait 1 second(and do not press any buttons during that time period), and press the HOME button
 In order to stop it, just press the HOME button again.
