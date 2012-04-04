@@ -34,7 +34,8 @@ PSP_MODULE_INFO("ZeroVSH_Patcher_User", 0x0007, 0, 1);
 
 #define UNUSED __attribute__((unused))
 #define MAKE_CALL(a, f) _sw(0x0C000000 | (((u32)(f) >> 2) & 0x03FFFFFF), a); 
-#define MAKE_JUMP(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a); _sw(0x00000000, a+4); 
+#define REDIRECT_FUNCTION(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a); _sw(0x00000000, a+4); 
+#define MAKE_JUMP(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a);
 
 int devkit;
 
@@ -112,15 +113,15 @@ int zeroCtrlDummyFunc(void) {
 int OnModuleStart(SceModule2 *mod) {       
         if(strcmp(mod->modname, "vsh_module") == 0) {
 		if(devkit == 0x06020010) {		
-			MAKE_JUMP(mod->text_addr+0x6CEC, zeroCtrlDummyFunc);			
+			REDIRECT_FUNCTION(mod->text_addr+0x6CEC, zeroCtrlDummyFunc);						
 			
 			CheckDriver = (void *)(mod->text_addr+0x375FC);
-			MAKE_CALL(mod->text_addr+0x14580, zeroCtrlCheckDriver);					
+			MAKE_CALL(mod->text_addr+0x14580, zeroCtrlCheckDriver);	
 			
 			AddVshItem = (void *)(mod->text_addr+0x21E18);		
-			MAKE_CALL(mod->text_addr+0x206F8, zeroCtrlAddVshItem);		
+			MAKE_CALL(mod->text_addr+0x206F8, zeroCtrlAddVshItem);					
 		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {
-			MAKE_JUMP(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
+			REDIRECT_FUNCTION(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
 			
 			CheckDriver = (void *)(mod->text_addr+0x37EA8);
 			MAKE_CALL(mod->text_addr+0x14B9C, zeroCtrlCheckDriver);
@@ -128,7 +129,7 @@ int OnModuleStart(SceModule2 *mod) {
 			AddVshItem = (void *)(mod->text_addr+0x22608);			
 			MAKE_CALL(mod->text_addr+0x20EBC, zeroCtrlAddVshItem);			
 		} else if(devkit == 0x06060010) {
-			MAKE_JUMP(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
+			REDIRECT_FUNCTION(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
 			
 			CheckDriver = (void *)(mod->text_addr+0x37F34);
 			MAKE_CALL(mod->text_addr+0x14C64, zeroCtrlCheckDriver);
