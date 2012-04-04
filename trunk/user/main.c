@@ -110,10 +110,15 @@ int zeroCtrlDummyFunc(void) {
 	return -1;
 }
 //OK
+int zeroCtrlDummyFunc2(void) {
+	return 0;
+}
+//OK
 int OnModuleStart(SceModule2 *mod) {       
         if(strcmp(mod->modname, "vsh_module") == 0) {
 		if(devkit == 0x06020010) {		
-			REDIRECT_FUNCTION(mod->text_addr+0x6CEC, zeroCtrlDummyFunc);						
+			REDIRECT_FUNCTION(mod->text_addr+0x6CEC, zeroCtrlDummyFunc);	
+			MAKE_CALL(mod->text_addr+0x1EEAC, zeroCtrlDummyFunc2);
 			
 			CheckDriver = (void *)(mod->text_addr+0x375FC);
 			MAKE_CALL(mod->text_addr+0x14580, zeroCtrlCheckDriver);	
@@ -122,6 +127,7 @@ int OnModuleStart(SceModule2 *mod) {
 			MAKE_CALL(mod->text_addr+0x206F8, zeroCtrlAddVshItem);					
 		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {
 			REDIRECT_FUNCTION(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
+			MAKE_CALL(mod->text_addr+0x1F660, zeroCtrlDummyFunc2);
 			
 			CheckDriver = (void *)(mod->text_addr+0x37EA8);
 			MAKE_CALL(mod->text_addr+0x14B9C, zeroCtrlCheckDriver);
@@ -130,6 +136,7 @@ int OnModuleStart(SceModule2 *mod) {
 			MAKE_CALL(mod->text_addr+0x20EBC, zeroCtrlAddVshItem);			
 		} else if(devkit == 0x06060010) {
 			REDIRECT_FUNCTION(mod->text_addr+0x6E58, zeroCtrlDummyFunc);
+			MAKE_CALL(mod->text_addr+0x1F644, zeroCtrlDummyFunc2);
 			
 			CheckDriver = (void *)(mod->text_addr+0x37F34);
 			MAKE_CALL(mod->text_addr+0x14C64, zeroCtrlCheckDriver);
