@@ -37,7 +37,7 @@ PSP_MODULE_INFO("ZeroVSH_Patcher_User", 0x0007, 0, 1);
 #define REDIRECT_FUNCTION(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a); _sw(0x00000000, a+4); 
 #define MAKE_JUMP(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a);
 
-int devkit;
+int devkit, model;
 
 typedef struct
 {
@@ -81,6 +81,8 @@ int (*AddVshItem)(void *arg, int topitem, SceVshItem *item) = NULL;
 void (* AddSysconfItem)(u32 *option, SceSysconfItem **item) = NULL;
 int (*CheckDriver)(int drvbit, u32 *umd_data, u32 *a2, u32 *a3) = NULL;
 
+int zeroCtrlGetModelReal(void);
+
 //OK
 int zeroCtrlAddVshItem(void *arg, int topitem, SceVshItem *item) {	
 	if(strcmp(item->text,"msg_bt_device_settings") == 0) {		
@@ -93,6 +95,8 @@ int zeroCtrlAddVshItem(void *arg, int topitem, SceVshItem *item) {
 void zeroCtrlAddSysconfItem(u32 *option, SceSysconfItem **item) {
 	if(strcmp((* item)->page, "page_psp_config_slide_action") == 0) {
 		return;
+	} else if(strcmp((*item)->page, "page_psp_config_color_space_mode") == 0) {
+		return;
 	}
 	
 	AddSysconfItem(option, item);
@@ -103,7 +107,7 @@ int zeroCtrlCheckDriver(int drvbit UNUSED, u32 *umd_data, u32 *a2, u32 *a3) {
 	//0x2 == umd
 	//0x4 == usb(unused or ?)
 	//0x8 == internal flash	
-	return CheckDriver(0x1 | 0x2, umd_data, a2, a3);
+	return CheckDriver((0x1 | 0x2 | 0x4), umd_data, a2, a3);
 }
 //OK
 int zeroCtrlDummyFunc(void) {
@@ -116,7 +120,7 @@ int zeroCtrlDummyFunc2(void) {
 //OK
 int OnModuleStart(SceModule2 *mod) {       
         if(strcmp(mod->modname, "vsh_module") == 0) {
-		if(devkit == 0x06020010) {		
+		if(devkit == 0x06020010) {					
 			REDIRECT_FUNCTION(mod->text_addr+0x6CEC, zeroCtrlDummyFunc);	
 			MAKE_CALL(mod->text_addr+0x1EEAC, zeroCtrlDummyFunc2);
 			
@@ -144,26 +148,37 @@ int OnModuleStart(SceModule2 *mod) {
 			AddVshItem = (void *)(mod->text_addr+0x22648);		
 			MAKE_CALL(mod->text_addr+0x20EFC, zeroCtrlAddVshItem);			
 		}
-        }
-        
-        if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
+        } else if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
 		if(devkit == 0x06020010) {
 			AddSysconfItem = (void *)(mod->text_addr+0x27918);
 			MAKE_CALL(mod->text_addr+0x1CA3C, zeroCtrlAddSysconfItem);
+			
+			if(model <= 1) {
+				MAKE_CALL(mod->text_addr+0x1C924, zeroCtrlAddSysconfItem);
+			}			
 		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {
 			AddSysconfItem = (void *)(mod->text_addr+0x2828C);
 			MAKE_CALL(mod->text_addr+0x1D2BC, zeroCtrlAddSysconfItem);
+			
+			if(model <= 1) {
+				MAKE_CALL(mod->text_addr+0x1D1A4, zeroCtrlAddSysconfItem);
+			}		
 		} else if(devkit == 0x06060010) {
 			AddSysconfItem = (void *)(mod->text_addr+0x286AC);
 			MAKE_CALL(mod->text_addr+0x1D6C8, zeroCtrlAddSysconfItem);
+			
+			if(model <= 1) {
+				MAKE_CALL(mod->text_addr+0x1D5B0, zeroCtrlAddSysconfItem);
+			}	
 		}
-	}
+	} 
 	
        return previous ? previous(mod) : 0;
 }
 //OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {  
-	devkit = sceKernelDevkitVersion();
+	model = zeroCtrlGetModelReal();
+	devkit = sceKernelDevkitVersion();	
 	previous = sctrlHENSetStartModuleHandler(OnModuleStart);        
 	return 0;
 }
