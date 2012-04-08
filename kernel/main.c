@@ -293,7 +293,7 @@ int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
 		sprintf(ve_file, "/vsh/module/skype_ve.prx");	
 		zeroCtrlWriteDebug("Forcing: %s\n", ve_file);
 		return IoOpen(arg, ve_file, flags, mode); 
-	    }
+	    } 
     }
            
     if (ms_drv && zeroCtrlIsValidFileType(file)) {
@@ -319,7 +319,7 @@ int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
 		sprintf(ve_file, "/vsh/module/skype_ve.prx");	
 		zeroCtrlWriteDebug("Forcing: %s\n", ve_file);
 		return IoGetstat(arg, ve_file, stat); 
-	    }
+	    } 
     }
     
     if (ms_drv && zeroCtrlIsValidFileType(file)) {
