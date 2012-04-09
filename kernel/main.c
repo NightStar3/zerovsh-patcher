@@ -548,7 +548,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 
     zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
     zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
-    zeroCtrlWriteDebug("[--- Debug version ---]\n\n");
+    zeroCtrlWriteDebug("[--- Full version ---]\n\n");
 
     zeroCtrlResolveNids();
 
@@ -565,7 +565,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
     
     slideState = ZERO_SLIDE_STOPPED;
     
-    if((model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
+    if((model != 0) && (model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
 		zeroCtrlCreatePatchThread();
 		previous = sctrlHENSetStartModuleHandler(OnModuleStart);    

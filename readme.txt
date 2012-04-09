@@ -5,6 +5,9 @@ fullest extent without writting to the flash0. ZeroVSH Patcher redirects the
 loading of various file types from flash to your memory stick or internal storage, 
 thus removing the fear of bricking.
 
+In version 0.2, there is support for the psp go's clock and calendar on other psp models (currently psp 1k is not supported)
+Please scroll down for further information. 
+
 
 ---- How to Use ----
 
@@ -15,6 +18,12 @@ folder which you have RedirPath set to in zerovsh.ini (Default is (root):/PSP/VS
 
 
 ---- Enabling the clock and calendar ----
+
+------------------------------
+You must be on a psp model that isn't a 1k, due to the fact that there is a memory bug.
+We will try to get this fixed in version 0.3
+------------------------------
+
 Open up zerovsh.ini and set SlidePlugin to Enabled
 
 Then, navigate to the /slide folder and place the files slide_plugin_XXX.rco, slide_plugin_XXX.prx, and netconf_bt_plugin_6XX.prx(only if 6.3X and above) in the folder which you have
@@ -30,8 +39,9 @@ In order to stop it, just press the HOME button again.
 
 ---- Bugs ----
 
-Prompt for disabling bluetooth when using usb or camera with clock and calendar enabled
-Umd, and umd update shows a blank image with clock and calendar enabled
+-Prompt for disabling bluetooth when using usb or camera with clock and calendar enabled
+-Umd, and umd update shows a blank image with clock and calendar enabled
+-Does not work on 1k psp
 
 (Feel free to report new bugs)
 
@@ -83,7 +93,8 @@ File types supported:
 
 Changelog
 v0.2a:
-[+] Support for PSPGO's clock and calendar on other models
+[+] Support for PSPGO's clock and calendar on other models (non-1k atm)
+[+] Added 5.70 support
 [+] dat file support
 [+] Added config support: zerovsh.ini
 v0.1:
