@@ -99,34 +99,16 @@ void zeroCtrlResolveNids(void) {
     	}
     	if(fw_version <= 0x03050210) {
     		fw_nid = nids[i].nidsha1;
-		
-		vshgetmodel_nid = 0xDEADBEEF;
-		storagefunc_nid = 0xDEADBEEF;
     	} else if((fw_version >= 0x05000010) && (fw_version <= 0x05050010)) {
             fw_nid = nids[i].nid5xx;
-	    
-	    vshgetmodel_nid = 0xDEADBEEF;
-	    storagefunc_nid = 0xDEADBEEF;
         } else if(fw_version == 0x05070010) {
             fw_nid = nids[i].nid570;
-	    
-	    vshgetmodel_nid = 0xDEADBEEF;
-	    storagefunc_nid = 0xDEADBEEF;
     	} else if(fw_version == 0x06020010) {
     		fw_nid = nids[i].nid620;
-		
-		vshgetmodel_nid = 0x63E40313;
-		storagefunc_nid = 0xB0FAA31A;
     	} else if((fw_version >= 0x06030010) && (fw_version <= 0x06030910)) {
     		fw_nid = nids[i].nid63x;
-		
-		vshgetmodel_nid = 0xAD90BEE5;
-		storagefunc_nid = 0x40051F7E;
     	} else if(fw_version == 0x06060010) {
     		fw_nid = nids[i].nid660;
-		
-		vshgetmodel_nid = 0x21C243FE;
-		storagefunc_nid = 0xD53FE7FF;
     	} else {
     		zeroCtrlWriteDebug("unknown firmware version: %08X\n", fw_version);
     		return;
