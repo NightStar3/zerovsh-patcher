@@ -57,6 +57,7 @@ modules g_modules_mod[] = {
 const char *exts[] = { ".rco", ".pmf", ".bmp", ".pgf", ".prx", ".dat" };
 
 int k1, model;
+int cpu, bus;
 SceUID memid;
 
 PspIoDrv *lflash;
@@ -85,6 +86,8 @@ int (*IoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
 
 int vshImposeGetParam(u32 value);
 int vshCtrlReadBufferPositive(SceCtrlData *pad, int count);
+
+int SetSpeed(int cpufreq, int busfreq);
 
 int slideState;
 
@@ -278,24 +281,7 @@ int zeroCtrlMsIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat)
     return msIoGetstat(arg, file, stat);
 }
 //OK
-int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
-	if(model != 4) {
-	    if(strcmp(file, "/vsh/etc/index_05g.dat") == 0) { 
-		char index_dat[256];
-	    
-		sprintf(index_dat, "/vsh/etc/index_0%dg.dat", model+1);	  
-	   
-		zeroCtrlWriteDebug("Forcing: %s\n", index_dat);           
-		return IoOpen(arg, index_dat, flags, mode);
-	    } else if(strcmp(file, "/vsh/module/skype_ve_05g.prx") == 0) { 
-		char ve_file[256];
-		
-		sprintf(ve_file, "/vsh/module/skype_ve.prx");	
-		zeroCtrlWriteDebug("Forcing: %s\n", ve_file);
-		return IoOpen(arg, ve_file, flags, mode); 
-	    } 
-    }
-           
+int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {          
     if (ms_drv && zeroCtrlIsValidFileType(file)) {
         return zeroCtrlIoOpenEX(arg, file, flags, mode);
     } else {
@@ -304,24 +290,7 @@ int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
     return IoOpen(arg, file, flags, mode);
 }
 //OK
-int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {	
-    if(model != 4) {
-	    if(strcmp(file, "/vsh/etc/index_05g.dat") == 0) { 
-		char index_dat[256];
-	    
-		sprintf(index_dat, "/vsh/etc/index_0%dg.dat", model+1);	  
-	   
-		zeroCtrlWriteDebug("Forcing: %s\n", index_dat);           
-		return IoGetstat(arg, index_dat, stat);
-	    } else if(strcmp(file, "/vsh/module/skype_ve_05g.prx") == 0) { 
-		char ve_file[256];
-		
-		sprintf(ve_file, "/vsh/module/skype_ve.prx");	
-		zeroCtrlWriteDebug("Forcing: %s\n", ve_file);
-		return IoGetstat(arg, ve_file, stat); 
-	    } 
-    }
-    
+int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {	   
     if (ms_drv && zeroCtrlIsValidFileType(file)) {
         return zeroCtrlIoGetstatEX(arg, file, stat);
     } else {
@@ -429,6 +398,7 @@ int zeroCtrlDummyFunc(void) {
 	} else if(slideState == ZERO_SLIDE_STOPPED) {
 		zeroCtrlWriteDebug("Unloading slide 2\n");
 		
+		SetSpeed(cpu, bus);
 		pspSdkSetK1(k1);
 		return -1;
 		
@@ -462,11 +432,13 @@ int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
         if(slideState == ZERO_SLIDE_STOPPED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {      			
                         zeroCtrlWriteDebug("Loading slide\n");
+			SetSpeed(266, 133);
+			
                         slideState = ZERO_SLIDE_STARTING;                     
                 }
         } else if(slideState == ZERO_SLIDE_STARTED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {         		
-                        zeroCtrlWriteDebug("Stopping slide\n");
+                        zeroCtrlWriteDebug("Stopping slide\n");		
                         slideState = ZERO_SLIDE_STOPPING;                        
                 }
         }        
@@ -476,24 +448,6 @@ int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
         return vshCtrlReadBufferPositive(pad, count);
 }
 //OK
-int zeroCtrlStorageFunc(void) {
-	k1 = pspSdkSetK1(0);
-	zeroCtrlWriteDebug("Storage function check\n");
-	pspSdkSetK1(k1);
-	
-	return 0;
-}
-//OK
-int zeroCtrlGetModelReal(void) {
-	int ret;
-	
-	k1 = pspSdkSetK1(0);
-	ret = sceKernelGetModel();
-	pspSdkSetK1(k1);
-	
-	return ret;
-}
-//OK
 int OnModuleStart(SceModule2 *mod) {
         zeroCtrlWriteDebug("Module: %s\n", mod->modname);
         
@@ -501,11 +455,8 @@ int OnModuleStart(SceModule2 *mod) {
                 hook_import_bynid(mod, "sceBSMan", 0x23E3A9B6, zeroCtrlDummyFunc, 1);
                 hook_import_bynid(mod, "sceVshBridge", 0x639C3CB3, zeroCtrlGetParam, 1);		
         } else if(strcmp(mod->modname, "vsh_module") == 0) {
-		hook_import_bynid(mod, "sceVshBridge", vshgetmodel_nid, zeroCtrlGetModel, 1);	
 		hook_import_bynid(mod, "sceVshBridge", 0xC6395C03, zeroCtrlReadBufferPositive, 1);      	 
-        }                
-        
-        hook_import_bynid(mod, "vsh", storagefunc_nid, zeroCtrlStorageFunc, 1);	
+        }         
                 
        ClearCaches();
        return previous ? previous(mod) : 0;
@@ -544,7 +495,6 @@ void zeroCtrlCreatePatchThread(void) {
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
 
     model = sceKernelGetModel();
-    zeroCtrlInitDebug(model, 1,1);
 
     zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
     zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
@@ -559,7 +509,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
     
     zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
     zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
-     
+
     zeroCtrlHookModule();
     zeroCtrlHookDriver();    
     

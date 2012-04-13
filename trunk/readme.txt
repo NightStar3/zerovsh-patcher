@@ -26,8 +26,8 @@ We will try to get this fixed in version 0.3
 
 Open up zerovsh.ini and set SlidePlugin to Enabled
 
-Then, navigate to the /slide folder and place the files slide_plugin_XXX.rco, slide_plugin_XXX.prx, and netconf_bt_plugin_6XX.prx(only if 6.3X and above) in the folder which you have
-RedirPath set to in zerovsh.ini (Default is (root):/PSP/VSH) and rename them to slide_plugin.rco, slide_plugin.prx, and netconf_bt_plugin.prx
+Then, navigate to the /slide folder and place the files slide_plugin_XXX.rco and slide_plugin_XXX.prx in the folder which you have
+RedirPath set to in zerovsh.ini (Default is (root):/PSP/VSH) and rename them to slide_plugin.rco and slide_plugin.prx
 
 NOTE: If you have a umd inserted
 -----------> If the loading icon (small animation going on in the bottom right corner of your screen) is visible, wait for it to pass before
@@ -39,8 +39,6 @@ In order to stop it, just press the HOME button again.
 
 ---- Bugs ----
 
--Prompt for disabling bluetooth when using usb or camera with clock and calendar enabled
--Umd, and umd update shows a blank image with clock and calendar enabled
 -Does not work on 1k psp
 
 (Feel free to report new bugs)

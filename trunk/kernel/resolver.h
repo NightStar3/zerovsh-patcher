@@ -38,7 +38,7 @@ typedef struct {
 	u32 count;
 } libname;
 
-u32 moduleprobe_nid, vshgetmodel_nid, storagefunc_nid;
+u32 moduleprobe_nid;
 
 void zeroCtrlResolveNids(void);
 

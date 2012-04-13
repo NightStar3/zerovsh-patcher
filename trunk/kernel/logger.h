@@ -22,30 +22,9 @@
 #include <stdio.h>
 
 #ifdef DEBUG
-
-#define LOGFILE "ms0:/zerovsh_log.txt"
-#define LOGFILE_GO "ef0:/zerovsh_log.txt"
-
-extern char _buffer_log[256];
-extern char _logfile[128];
-
-void zeroCtrlInitDebug(int model, int always_opened, int use_stdout);
-int kwrite(const char *path, void *buffer, int buflen);
-
-/*
-#define zeroCtrlWriteDebug(format, ...) do { \
-    sprintf(_buffer_log, "%s: "format, __func__, ## __VA_ARGS__); \
-    kwrite(_logfile, _buffer_log, strlen(_buffer_log)); \
-} while(0)
-*/
-
 #define zeroCtrlWriteDebug(format, ...) printf(format, ## __VA_ARGS__)
 #else
-
-#define zeroCtrlInitDebug(x,y,z)
 #define zeroCtrlWriteDebug(format, ...)
-// uncomment this to use the logger with psplink
-
 #endif
 
 #endif /* LOGGER_H_ */
