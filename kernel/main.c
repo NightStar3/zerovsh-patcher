@@ -57,7 +57,6 @@ modules g_modules_mod[] = {
 const char *exts[] = { ".rco", ".pmf", ".bmp", ".pgf", ".prx", ".dat" };
 
 int k1, model;
-int cpu, bus;
 SceUID memid;
 
 PspIoDrv *lflash;
@@ -382,10 +381,6 @@ void zeroCtrlHookModule(void) {
     }
 }
 //OK
-int zeroCtrlGetModel(void) {       
-        return 4;
-}
-//OK
 int zeroCtrlDummyFunc(void) {
         k1 = pspSdkSetK1(0);               
 	
@@ -397,8 +392,7 @@ int zeroCtrlDummyFunc(void) {
 		return -1;
 	} else if(slideState == ZERO_SLIDE_STOPPED) {
 		zeroCtrlWriteDebug("Unloading slide 2\n");
-		
-		SetSpeed(cpu, bus);
+
 		pspSdkSetK1(k1);
 		return -1;
 		

@@ -7,14 +7,12 @@ PSP_EXPORT_VAR_HASH(module_info)
 PSP_EXPORT_END
 
 PSP_EXPORT_START(ZeroCtrlForUser, 0, 0x4001)
-PSP_EXPORT_FUNC(zeroCtrlGetModel)
 PSP_EXPORT_FUNC(zeroCtrlDummyFunc)
 PSP_EXPORT_FUNC(zeroCtrlGetParam)
 PSP_EXPORT_FUNC(zeroCtrlReadBufferPositive)
 PSP_EXPORT_END
 
 PSP_EXPORT_START(ZeroCtrlForKernel, 0, 0x0001)
-PSP_EXPORT_FUNC(zeroCtrlGetModel)
 PSP_EXPORT_FUNC(zeroCtrlDummyFunc)
 PSP_EXPORT_FUNC(zeroCtrlGetParam)
 PSP_EXPORT_FUNC(zeroCtrlReadBufferPositive)
