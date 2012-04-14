@@ -23,6 +23,7 @@
 #include <pspsysmem_kernel.h>
 #include <pspctrl.h>
 #include <psprtc.h>
+#include <pspreg.h>
 
 // from CFW SDK
 #include "pspmodulemgr_kernel.h"
@@ -136,19 +137,19 @@ int zeroCtrlIsValidFileType(const char *file) {
     int ret = 0;
     const char *ext;
     if (!file) {
-        zeroCtrlWriteDebug("--> Is NULL\n");
+        //zeroCtrlWriteDebug("--> Is NULL\n");
         return 0;
     }
 
-    zeroCtrlWriteDebug("file: %s\n", file);
+    //zeroCtrlWriteDebug("file: %s\n", file);
     k1 = pspSdkSetK1(0);
     ext = strrchr(file, '.');
     if (!ext) {
-        zeroCtrlWriteDebug("--> No Extension\n");
+        //zeroCtrlWriteDebug("--> No Extension\n");
     } else {
         for (int i = 0; i < ITEMSOF(exts); i++) {
             if (strcmp(ext, exts[i]) == 0) {
-                zeroCtrlWriteDebug("Success\n");
+                //zeroCtrlWriteDebug("Success\n");
                 ret = 1;
                 break;
             }
@@ -162,11 +163,11 @@ const char *zeroCtrlGetFileName(const char *file) {
     char *ret = NULL;
 
     if (!file) {
-        zeroCtrlWriteDebug("--> Is NULL\n");
+        //zeroCtrlWriteDebug("--> Is NULL\n");
         return ret;
     }
 
-    zeroCtrlWriteDebug("file: %s\n", file);
+    //zeroCtrlWriteDebug("file: %s\n", file);
     k1 = pspSdkSetK1(0);
     ret = strrchr(file, '/');
     pspSdkSetK1(k1);
@@ -177,9 +178,9 @@ const char *zeroCtrlGetFileName(const char *file) {
     }
 
     if (!ret) {
-        zeroCtrlWriteDebug("--> No path\n");
+        //zeroCtrlWriteDebug("--> No path\n");
     } else {
-        zeroCtrlWriteDebug("Success\n");
+        //zeroCtrlWriteDebug("Success\n");
     }
     return ret;
 }
@@ -189,7 +190,7 @@ char *zeroCtrlSwapFile(const char *file) {
     char *newfile = zeroCtrlAllocUserBuffer(256);
 
     if (!newfile) {
-        zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
+        //zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
         return NULL;
     }
 
@@ -198,14 +199,14 @@ char *zeroCtrlSwapFile(const char *file) {
     *newfile = '\0';
     oldfile = zeroCtrlGetFileName(file);
     if (!oldfile) {
-        zeroCtrlWriteDebug("-> File not found, abort\n\n");
+        //zeroCtrlWriteDebug("-> File not found, abort\n\n");
         pspSdkSetK1(k1);
         return NULL;
     }
 
     if (zeroCtrlIsBlacklistedFound()) {
         if (strcmp(oldfile, "/ltn0.pgf") == 0) {
-            zeroCtrlWriteDebug("-> File is blacklisted, abort\n\n");
+            //zeroCtrlWriteDebug("-> File is blacklisted, abort\n\n");
             pspSdkSetK1(k1);
             return NULL;
         }
@@ -214,7 +215,7 @@ char *zeroCtrlSwapFile(const char *file) {
     sprintf(newfile, "%s%s", redir_path, oldfile);
     pspSdkSetK1(k1);
 
-    zeroCtrlWriteDebug("-> Redirected file: %s\n", newfile);
+    //zeroCtrlWriteDebug("-> Redirected file: %s\n", newfile);
     return newfile;
 }
 //OK
@@ -233,9 +234,9 @@ int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat)
     ret = msIoGetstat(arg, new_path, stat);
 
     if (ret >= 0) {
-        zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
+        //zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
     } else {
-        zeroCtrlWriteDebug("--> %s not found, using default file\n\n", file);
+        //zeroCtrlWriteDebug("--> %s not found, using default file\n\n", file);
         arg->drv = drv;
         ret = IoGetstat(arg, file, stat);
     }
@@ -258,9 +259,9 @@ int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) 
     ret = msIoOpen(arg, new_path, flags, mode);
 
     if (ret >= 0) {
-        zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
+        //zeroCtrlWriteDebug("--> %s found, using custom file\n\n", new_path);
     } else {
-        zeroCtrlWriteDebug("--> %s not found, using default file\n\n", file);
+        //zeroCtrlWriteDebug("--> %s not found, using default file\n\n", file);
         arg->drv = drv;
         ret = IoOpen(arg, file, flags, mode);
     }
@@ -284,7 +285,7 @@ int zeroCtrlIoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) {
     if (ms_drv && zeroCtrlIsValidFileType(file)) {
         return zeroCtrlIoOpenEX(arg, file, flags, mode);
     } else {
-        zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
+        //zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
     }
     return IoOpen(arg, file, flags, mode);
 }
@@ -293,7 +294,7 @@ int zeroCtrlIoGetstat(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat) {
     if (ms_drv && zeroCtrlIsValidFileType(file)) {
         return zeroCtrlIoGetstatEX(arg, file, stat);
     } else {
-        zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
+        //zeroCtrlWriteDebug("cannot redirect file: %s\n\n", file);
     }
     return IoGetstat(arg, file, stat);
 }
@@ -306,7 +307,7 @@ int zeroCtrlHookDriver(void) {
     lflash = sctrlHENFindDriver("flashfat");
 
     if (!lflash || !fatms) {
-        zeroCtrlWriteDebug("failed to hook drivers: lflash: %08X, fatms: %08X\n", (u32)lflash, (u32)fatms);
+        //zeroCtrlWriteDebug("failed to hook drivers: lflash: %08X, fatms: %08X\n", (u32)lflash, (u32)fatms);
         return 0;
     }  
 
@@ -316,7 +317,7 @@ int zeroCtrlHookDriver(void) {
     IoOpen = lflash->funcs->IoOpen;
     IoGetstat = lflash->funcs->IoGetstat;
 
-    zeroCtrlWriteDebug("suspending interrupts\n");
+    //zeroCtrlWriteDebug("suspending interrupts\n");
     intr = sceKernelCpuSuspendIntr();
 
     fatms->funcs->IoOpen = zeroCtrlMsIoOpen;
@@ -327,7 +328,7 @@ int zeroCtrlHookDriver(void) {
 
     sceKernelCpuResumeIntr(intr);
     ClearCaches();
-    zeroCtrlWriteDebug("interrupts restored\n");
+    //zeroCtrlWriteDebug("interrupts restored\n");
 
     fd = sceIoOpen(model == 4 ? "ef0:/_dummy.prx" : "ms0:/_dummy.prx", PSP_O_RDONLY, 0644);
 
@@ -336,7 +337,7 @@ int zeroCtrlHookDriver(void) {
         sceIoClose(fd);
     }
 
-    zeroCtrlWriteDebug("ms_drv addr: %08X\n", (u32)ms_drv);
+    //zeroCtrlWriteDebug("ms_drv addr: %08X\n", (u32)ms_drv);
 
     return 1;
 }
@@ -352,18 +353,18 @@ int zeroCtrlModuleProbe(void *data, void *exec_info) {
 
     for (int i = 0; i < ITEMSOF(g_modules_mod); i++) {
         if (strcmp(modname, g_modules_mod[i].modname) == 0) {
-            zeroCtrlWriteDebug("probing: %s\n", g_modules_mod[i].modfile);
+            //zeroCtrlWriteDebug("probing: %s\n", g_modules_mod[i].modfile);
             sprintf(filename, "%s%s/%s", model == 4 ? "ef0:" : "ms0:", redir_path, g_modules_mod[i].modfile);
             fd = sceIoOpen(filename, PSP_O_RDONLY, 0644);
             if (fd >= 0) {
-                zeroCtrlWriteDebug("writting %s into buffer\n", filename);
+                //zeroCtrlWriteDebug("writting %s into buffer\n", filename);
                 size = sceIoLseek(fd, 0, PSP_SEEK_END);
                 sceIoLseek(fd, 0, PSP_SEEK_SET);
                 sceIoRead(fd, data, size);
                 sceIoClose(fd);
                 ClearCaches();
             } else {
-                zeroCtrlWriteDebug("%s not found, leaving buffer untouched\n", filename);
+                //zeroCtrlWriteDebug("%s not found, leaving buffer untouched\n", filename);
             }
             break;
         }
@@ -375,9 +376,9 @@ void zeroCtrlHookModule(void) {
     SceModule2 *module = (SceModule2 *) sceKernelFindModuleByName("sceModuleManager");
 
     if (!module || hook_import_bynid(module, "LoadCoreForKernel", moduleprobe_nid, zeroCtrlModuleProbe, 0) < 0) {
-        zeroCtrlWriteDebug("failed to hook ProbeExecutableObject, nid: %08X\n", moduleprobe_nid);
+        //zeroCtrlWriteDebug("failed to hook ProbeExecutableObject, nid: %08X\n", moduleprobe_nid);
     } else {
-        zeroCtrlWriteDebug("ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)sceKernelProbeExecutableObject);
+        //zeroCtrlWriteDebug("ProbeExecutableObject nid: %08X, addr: %08X\n", moduleprobe_nid, (u32)sceKernelProbeExecutableObject);
     }
 }
 //OK
@@ -385,13 +386,13 @@ int zeroCtrlDummyFunc(void) {
         k1 = pspSdkSetK1(0);               
 	
 	if(slideState == ZERO_SLIDE_STOPPING) {
-		zeroCtrlWriteDebug("Unloading slide 1\n");
+		//zeroCtrlWriteDebug("Unloading slide 1\n");
 		slideState = ZERO_SLIDE_STOPPED;
 		
 		pspSdkSetK1(k1);
 		return -1;
 	} else if(slideState == ZERO_SLIDE_STOPPED) {
-		zeroCtrlWriteDebug("Unloading slide 2\n");
+		//zeroCtrlWriteDebug("Unloading slide 2\n");
 
 		pspSdkSetK1(k1);
 		return -1;
@@ -406,18 +407,49 @@ int zeroCtrlGetParam(u32 value) {
         
         if(value == 0x8000000D) {	
 		if(slideState == ZERO_SLIDE_STARTING) {			
-			zeroCtrlWriteDebug("Starting slide\n");			
+			//zeroCtrlWriteDebug("Starting slide\n");			
 			slideState = ZERO_SLIDE_STARTED;
 			
 			pspSdkSetK1(k1);
 			return 0;         
 		} 
         } else {
-                zeroCtrlWriteDebug("Not our param: 0x%08X\n\n", value);                
+                //zeroCtrlWriteDebug("Not our param: 0x%08X\n\n", value);                
         }
         
         pspSdkSetK1(k1);
         return vshImposeGetParam(value);
+}
+//OK
+int set_registry_value(const char *dir, const char *name, unsigned int val)
+{
+	int ret = 0;
+	struct RegParam reg;
+	REGHANDLE h;
+
+	memset(&reg, 0, sizeof(reg));
+	reg.regtype = 1;
+	reg.namelen = strlen("/system");
+	reg.unk2 = 1;
+	reg.unk3 = 1;
+	strcpy(reg.name, "/system");
+	if(sceRegOpenRegistry(&reg, 2, &h) == 0)
+	{
+		REGHANDLE hd;
+		if(!sceRegOpenCategory(h, dir, 2, &hd))
+		{
+			if(!sceRegSetKeyValue(hd, name, &val, 4))
+			{
+				ret = 1;
+				sceRegFlushCategory(hd);
+			}
+			sceRegCloseCategory(hd);
+		}
+		sceRegFlushRegistry(h);
+		sceRegCloseRegistry(h);
+	}
+
+	return ret;
 }
 //OK
 int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
@@ -425,14 +457,19 @@ int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
 	
         if(slideState == ZERO_SLIDE_STOPPED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {      			
-                        zeroCtrlWriteDebug("Loading slide\n");
+                        //zeroCtrlWriteDebug("Loading slide\n");
+                        
+                        //Fixes 'jump' bug with clock
 			SetSpeed(266, 133);
+			
+			//Cool animation after sleep mode/reset vsh/etc
+			set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);	
 			
                         slideState = ZERO_SLIDE_STARTING;                     
                 }
         } else if(slideState == ZERO_SLIDE_STARTED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {         		
-                        zeroCtrlWriteDebug("Stopping slide\n");		
+                        //zeroCtrlWriteDebug("Stopping slide\n");		
                         slideState = ZERO_SLIDE_STOPPING;                        
                 }
         }        
@@ -443,7 +480,7 @@ int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
 }
 //OK
 int OnModuleStart(SceModule2 *mod) {
-        zeroCtrlWriteDebug("Module: %s\n", mod->modname);
+        //zeroCtrlWriteDebug("Module: %s\n", mod->modname);
         
         if(strcmp(mod->modname, "slide_plugin_module") == 0) {            
                 hook_import_bynid(mod, "sceBSMan", 0x23E3A9B6, zeroCtrlDummyFunc, 1);
@@ -459,7 +496,7 @@ int OnModuleStart(SceModule2 *mod) {
 int zeroCtrlLoadStartModule(SceSize args UNUSED, void *argp UNUSED) {	
 	SceUID modid;
 	
-	zeroCtrlWriteDebug("Thread\n");
+	//zeroCtrlWriteDebug("Thread\n");
 	
 	do {	sceKernelDelayThread(100000); } while(!sceKernelFindModuleByName("sceKernelLibrary"));	
 	modid = sceKernelLoadModuleBuffer(size_zerovsh_user_module, zerovsh_user_module, 0, NULL);
@@ -467,7 +504,7 @@ int zeroCtrlLoadStartModule(SceSize args UNUSED, void *argp UNUSED) {
 	if(modid >= 0) {
 		sceKernelStartModule(modid, 0, NULL, 0, NULL);		
 	} else {
-		zeroCtrlWriteDebug("Module ID: 0x%08X\n", modid);
+		//zeroCtrlWriteDebug("Module ID: 0x%08X\n", modid);
 	}
 	
 	sceKernelExitDeleteThread(0);
@@ -482,7 +519,7 @@ void zeroCtrlCreatePatchThread(void) {
 	if(thid >= 0) {
 		sceKernelStartThread(thid, 0, NULL);		
 	} else {
-		zeroCtrlWriteDebug("Thread ID: 0x%08X\n", thid);	
+		//zeroCtrlWriteDebug("Thread ID: 0x%08X\n", thid);	
 	}	
 }
 //OK
@@ -501,15 +538,15 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
     ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
     ini_gets("General", "SlidePlugin", "Disabled", useSlide, sizeof(useSlide), config);
     
-    zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
-    zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
+    //zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
+    //zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
 
     zeroCtrlHookModule();
     zeroCtrlHookDriver();    
     
     slideState = ZERO_SLIDE_STOPPED;
     
-    if((model != 0) && (model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
+    if((model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
 		zeroCtrlCreatePatchThread();
 		previous = sctrlHENSetStartModuleHandler(OnModuleStart);    
