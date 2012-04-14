@@ -23,7 +23,6 @@
 #include <pspsysmem_kernel.h>
 #include <pspctrl.h>
 #include <psprtc.h>
-#include <pspreg.h>
 
 // from CFW SDK
 #include "pspmodulemgr_kernel.h"
@@ -421,49 +420,13 @@ int zeroCtrlGetParam(u32 value) {
         return vshImposeGetParam(value);
 }
 //OK
-int set_registry_value(const char *dir, const char *name, unsigned int val)
-{
-	int ret = 0;
-	struct RegParam reg;
-	REGHANDLE h;
-
-	memset(&reg, 0, sizeof(reg));
-	reg.regtype = 1;
-	reg.namelen = strlen("/system");
-	reg.unk2 = 1;
-	reg.unk3 = 1;
-	strcpy(reg.name, "/system");
-	if(sceRegOpenRegistry(&reg, 2, &h) == 0)
-	{
-		REGHANDLE hd;
-		if(!sceRegOpenCategory(h, dir, 2, &hd))
-		{
-			if(!sceRegSetKeyValue(hd, name, &val, 4))
-			{
-				ret = 1;
-				sceRegFlushCategory(hd);
-			}
-			sceRegCloseCategory(hd);
-		}
-		sceRegFlushRegistry(h);
-		sceRegCloseRegistry(h);
-	}
-
-	return ret;
-}
-//OK
 int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
         k1 = pspSdkSetK1(0);
 	
         if(slideState == ZERO_SLIDE_STOPPED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {      			
                         //zeroCtrlWriteDebug("Loading slide\n");
-                        
-                        //Fixes 'jump' bug with clock
 			SetSpeed(266, 133);
-			
-			//Cool animation after sleep mode/reset vsh/etc
-			set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);	
 			
                         slideState = ZERO_SLIDE_STARTING;                     
                 }
@@ -527,9 +490,9 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 
     model = sceKernelGetModel();
 
-    zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
-    zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
-    zeroCtrlWriteDebug("[--- Full version ---]\n\n");
+    //zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
+    //zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
+    //zeroCtrlWriteDebug("[--- Full version ---]\n\n");
 
     zeroCtrlResolveNids();
 
