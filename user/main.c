@@ -21,6 +21,8 @@
 #include <pspiofilemgr.h>
 #include <pspiofilemgr_fcntl.h>
 #include <pspsysmem_kernel.h>
+#include <pspctrl.h>
+#include <psprtc.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -39,6 +41,16 @@ PSP_MODULE_INFO("ZeroVSH_Patcher_User", 0x0007, 0, 1);
 
 int devkit;
 
+enum zeroCtrlSlideState {
+        ZERO_SLIDE_LOADING = 1,
+        ZERO_SLIDE_STARTING,
+        ZERO_SLIDE_STARTED,
+        ZERO_SLIDE_STOPPING,
+	ZERO_SLIDE_STOPPED,
+	ZERO_SLIDE_UNLOADED,
+};
+
+
 typedef struct
 {
         void *unk; //0
@@ -50,12 +62,21 @@ typedef struct
 } SceSysconfItem; //18
 
 STMOD_HANDLER previous = NULL;
-
+u16 g_hour;
 
 void (* AddSysconfItem)(u32 *option, SceSysconfItem **item) = NULL;
 void add_sysconf_item_stub();
 
 void slide_check_stub();
+
+int (* vshCtrlReadBufferPositive)(SceCtrlData *pad, int count) = NULL;
+void vsh_ctrl_stub();
+
+int zeroCtrlGetSlideState(void);
+void zeroCtrlSetSlideState(int state);
+int zeroCtrlContrast2Hour(void);
+
+int SetSpeed(int cpufreq, int busfreq);
 
 //OK
 void *zeroCtrlRedir2Stub(u32 address, void *stub, void *func) {
@@ -80,14 +101,60 @@ int zeroCtrlDummyFunc(void) {
 	return -1;
 }
 //OK
+int zeroCtrlDummyFunc2(void) {
+	return 0;
+}
+//OK
+int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
+	int ret;
+	int k1 = pspSdkSetK1(0);	
+		
+	ret = vshCtrlReadBufferPositive(pad, count);
+	
+        if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
+		if(pad->Buttons & PSP_CTRL_HOME) {     
+			//Fixes 'jump' bug with clock
+			SetSpeed(266, 133);
+			
+                        zeroCtrlSetSlideState(ZERO_SLIDE_STARTING);                     
+                }
+        } else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
+		if(pad->Buttons & PSP_CTRL_HOME) {         		
+                        zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING);                        
+                }
+        }        
+	
+	pspSdkSetK1(k1);
+        return ret;
+}
+//OK
+int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
+	int ret, level;
+	int k1 = pspSdkSetK1(0);
+	
+	ret = sceRtcGetCurrentClockLocalTime(time);
+	level = zeroCtrlContrast2Hour();
+	
+	if(level != -1) {
+		time->hour = level;
+		time->minutes = 0;
+	}
+	
+	pspSdkSetK1(k1);
+	return ret;
+}
+//OK
 int OnModuleStart(SceModule2 *mod) {       
         if(strcmp(mod->modname, "vsh_module") == 0) {
 		if(devkit == 0x06020010) {								
 			zeroCtrlRedir2Stub(mod->text_addr+0x6D78, slide_check_stub, zeroCtrlDummyFunc);
+			vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3F1B0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {		
 			zeroCtrlRedir2Stub(mod->text_addr+0x6F6C, slide_check_stub, zeroCtrlDummyFunc);
+			vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FA3C, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		} else if(devkit == 0x06060010) {			
 			zeroCtrlRedir2Stub(mod->text_addr+0x6F84, slide_check_stub, zeroCtrlDummyFunc);
+			vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FAF0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		}
         } else if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
 		if(devkit == 0x06020010) {			
@@ -97,13 +164,19 @@ int OnModuleStart(SceModule2 *mod) {
 		} else if(devkit == 0x06060010) {
 			AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x286AC, add_sysconf_item_stub, zeroCtrlAddSysconfItem);			
 		}
-	} 
+		
+		//To avoid the 'open slide' prompt after format 
+		MAKE_CALL(mod->text_addr+0x240, zeroCtrlDummyFunc2);
+	} else if(strcmp(mod->modname, "slide_plugin_module") == 0) {
+		MAKE_CALL(mod->text_addr+0xC990, zeroCtrlGetCurrentClockLocalTime);
+	}
 	
        return previous ? previous(mod) : 0;
 }
 //OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {  	
 	devkit = sceKernelDevkitVersion();	
+	
 	previous = sctrlHENSetStartModuleHandler(OnModuleStart);        
 	return 0;
 }
