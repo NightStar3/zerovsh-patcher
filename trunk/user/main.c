@@ -23,6 +23,7 @@
 #include <pspsysmem_kernel.h>
 #include <pspctrl.h>
 #include <psprtc.h>
+#include <pspdisplay.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -62,7 +63,7 @@ typedef struct
 } SceSysconfItem; //18
 
 STMOD_HANDLER previous = NULL;
-u16 g_hour;
+int level = -1;
 
 void (* AddSysconfItem)(u32 *option, SceSysconfItem **item) = NULL;
 void add_sysconf_item_stub();
@@ -74,7 +75,6 @@ void vsh_ctrl_stub();
 
 int zeroCtrlGetSlideState(void);
 void zeroCtrlSetSlideState(int state);
-int zeroCtrlContrast2Hour(void);
 
 int SetSpeed(int cpufreq, int busfreq);
 
@@ -106,7 +106,7 @@ int zeroCtrlDummyFunc2(void) {
 }
 //OK
 int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
-	int ret;
+	int ret, i, j;
 	int k1 = pspSdkSetK1(0);	
 		
 	ret = vshCtrlReadBufferPositive(pad, count);
@@ -121,6 +121,18 @@ int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
         } else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
 		if(pad->Buttons & PSP_CTRL_HOME) {         		
                         zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING);                        
+                } else if(pad->Buttons & PSP_CTRL_UP) {
+			level++;
+			
+			for(i=0; i<6; i++) {
+				sceDisplayWaitVblankStart();
+			}
+                } else if(pad->Buttons & PSP_CTRL_DOWN) {
+			level--;
+			
+			for(j=0; j<6; j++) {
+				sceDisplayWaitVblankStart();
+			}
                 }
         }        
 	
@@ -129,17 +141,16 @@ int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
 }
 //OK
 int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
-	int ret, level;
+	int ret;
 	int k1 = pspSdkSetK1(0);
 	
 	ret = sceRtcGetCurrentClockLocalTime(time);
-	level = zeroCtrlContrast2Hour();
-	
+
 	if(level != -1) {
 		time->hour = level;
 		time->minutes = 0;
 	}
-	
+
 	pspSdkSetK1(k1);
 	return ret;
 }
