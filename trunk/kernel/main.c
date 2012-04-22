@@ -22,8 +22,8 @@
 #include <pspiofilemgr_fcntl.h>
 #include <pspsysmem_kernel.h>
 #include <pspctrl.h>
-#include <psprtc.h>
 #include <pspreg.h>
+#include <pspsuspend.h>
 
 // from CFW SDK
 #include "pspmodulemgr_kernel.h"
@@ -43,6 +43,10 @@ PSP_MODULE_INFO("ZeroVSH_Patcher_Kernel", 0x1007, 0, 2);
 PSP_MAIN_THREAD_ATTR(0);
 
 #define UNUSED __attribute__((unused))
+#define MAKE_CALL(a, f) _sw(0x0C000000 | (((u32)(f) >> 2) & 0x03FFFFFF), a); 
+#define REDIRECT_FUNCTION(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a); _sw(0x00000000, a+4); 
+#define MAKE_JUMP(a, f) _sw(0x08000000 | (((u32)(f) & 0x0FFFFFFC) >> 2), a);
+
 
 typedef struct {
 	const char *modname;
@@ -65,7 +69,7 @@ PspIoDrv *fatms;
 static PspIoDrvArg * ms_drv = NULL;
 STMOD_HANDLER previous = NULL;
 
-/*These don't actually mean what they say xD*/
+
 enum zeroCtrlSlideState {
         ZERO_SLIDE_LOADING = 1,
         ZERO_SLIDE_STARTING,
@@ -77,6 +81,7 @@ enum zeroCtrlSlideState {
 
 static char redir_path[128];
 static char useSlide[128];
+static char slideContrast[128];
 
 int (*msIoOpen)(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
 int (*msIoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
@@ -85,9 +90,6 @@ int (*IoOpen)(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
 int (*IoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
 
 int vshImposeGetParam(u32 value);
-int vshCtrlReadBufferPositive(SceCtrlData *pad, int count);
-
-int SetSpeed(int cpufreq, int busfreq);
 
 int slideState;
 
@@ -382,16 +384,24 @@ void zeroCtrlHookModule(void) {
     }
 }
 //OK
+int zeroCtrlGetSlideState(void) {
+	return slideState;
+}
+//OK
+void zeroCtrlSetSlideState(int state) {
+	slideState = state;
+}
+//OK
 int zeroCtrlDummyFunc(void) {
         k1 = pspSdkSetK1(0);               
 	
-	if(slideState == ZERO_SLIDE_STOPPING) {
+	if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPING) {
 		//zeroCtrlWriteDebug("Unloading slide 1\n");
-		slideState = ZERO_SLIDE_STOPPED;
+		zeroCtrlSetSlideState(ZERO_SLIDE_STOPPED);
 		
 		pspSdkSetK1(k1);
 		return -1;
-	} else if(slideState == ZERO_SLIDE_STOPPED) {
+	} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
 		//zeroCtrlWriteDebug("Unloading slide 2\n");
 
 		pspSdkSetK1(k1);
@@ -406,9 +416,9 @@ int zeroCtrlGetParam(u32 value) {
         k1 = pspSdkSetK1(0);
         
         if(value == 0x8000000D) {	
-		if(slideState == ZERO_SLIDE_STARTING) {			
+		if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTING) {			
 			//zeroCtrlWriteDebug("Starting slide\n");			
-			slideState = ZERO_SLIDE_STARTED;
+			zeroCtrlSetSlideState(ZERO_SLIDE_STARTED);
 			
 			pspSdkSetK1(k1);
 			return 0;         
@@ -452,43 +462,14 @@ int set_registry_value(const char *dir, const char *name, unsigned int val)
 	return ret;
 }
 //OK
-int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
-        k1 = pspSdkSetK1(0);
-	
-        if(slideState == ZERO_SLIDE_STOPPED) {
-		if(pad->Buttons & PSP_CTRL_HOME) {      			
-                        //zeroCtrlWriteDebug("Loading slide\n");
-                        
-                        //Fixes 'jump' bug with clock
-			SetSpeed(266, 133);
-			
-			//Cool animation after sleep mode/reset vsh/etc
-			set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);	
-			
-                        slideState = ZERO_SLIDE_STARTING;                     
-                }
-        } else if(slideState == ZERO_SLIDE_STARTED) {
-		if(pad->Buttons & PSP_CTRL_HOME) {         		
-                        //zeroCtrlWriteDebug("Stopping slide\n");		
-                        slideState = ZERO_SLIDE_STOPPING;                        
-                }
-        }        
-	
-        ClearCaches();
-        pspSdkSetK1(k1);
-        return vshCtrlReadBufferPositive(pad, count);
-}
-//OK
 int OnModuleStart(SceModule2 *mod) {
-        //zeroCtrlWriteDebug("Module: %s\n", mod->modname);
+        zeroCtrlWriteDebug("Module: %s\n", mod->modname);
         
         if(strcmp(mod->modname, "slide_plugin_module") == 0) {            
                 hook_import_bynid(mod, "sceBSMan", 0x23E3A9B6, zeroCtrlDummyFunc, 1);
                 hook_import_bynid(mod, "sceVshBridge", 0x639C3CB3, zeroCtrlGetParam, 1);		
-        } else if(strcmp(mod->modname, "vsh_module") == 0) {
-		hook_import_bynid(mod, "sceVshBridge", 0xC6395C03, zeroCtrlReadBufferPositive, 1);      	 
-        }         
-                
+        }
+        
        ClearCaches();
        return previous ? previous(mod) : 0;
 }
@@ -523,30 +504,57 @@ void zeroCtrlCreatePatchThread(void) {
 	}	
 }
 //OK
+int zeroCtrlContrast2Hour(void) {	
+	if(strcmp(slideContrast, "Disabled") == 0) {
+		return -1;
+	} else if(strcmp(slideContrast, "1") == 0) {
+		return 6;
+	}  else if(strcmp(slideContrast, "2") == 0) {
+		return 9;
+	}  else if(strcmp(slideContrast, "3") == 0) {
+		return 12;
+	}  else if(strcmp(slideContrast, "4") == 0) {
+		return 15;
+	}  else if(strcmp(slideContrast, "5") == 0) {
+		return 18;
+	}  else if(strcmp(slideContrast, "6") == 0) {
+		return 21;
+	}  else if(strcmp(slideContrast, "7") == 0) {
+		return 3;
+	}  else if(strcmp(slideContrast, "8") == 0) {
+		return 0;
+	} 
+	
+	return -1;
+}
+//OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
+	model = sceKernelGetModel();
 
-    model = sceKernelGetModel();
+	zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
+	zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
+	zeroCtrlWriteDebug("[--- Full version ---]\n\n");
 
-    zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
-    zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
-    zeroCtrlWriteDebug("[--- Full version ---]\n\n");
+	zeroCtrlResolveNids();
 
-    zeroCtrlResolveNids();
+	const char *config = (model == 4) ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
 
-    const char *config = (model == 4) ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
-
-    ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
-    ini_gets("General", "SlidePlugin", "Disabled", useSlide, sizeof(useSlide), config);
+	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
+	ini_gets("General", "SlidePlugin", "Disabled", useSlide, sizeof(useSlide), config);
+	ini_gets("General", "SlideContrast", "Disabled", slideContrast, sizeof(slideContrast), config);
     
-    //zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
-    //zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
+	//zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
+	//zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
 
-    zeroCtrlHookModule();
-    zeroCtrlHookDriver();    
+	zeroCtrlHookModule();
+	zeroCtrlHookDriver();    
     
-    slideState = ZERO_SLIDE_STOPPED;
-    
-    if((model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
+	zeroCtrlSetSlideState(ZERO_SLIDE_STOPPED);
+			
+	//Cool animation after reset vsh with no wallpaper enabled
+	set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);
+	
+	if((model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
 		zeroCtrlCreatePatchThread();
 		previous = sctrlHENSetStartModuleHandler(OnModuleStart);    

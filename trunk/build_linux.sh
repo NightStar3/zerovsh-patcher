@@ -6,7 +6,7 @@ cp zerovsh_upatcher.h ../kernel
 rm -Rf *.prx *.elf zerovsh_upatcher.h
 cd ../kernel
 make clean
-make 
+make DEBUG=1
 cp zerovsh_patcher.prx ../bin
 rm -Rf *.prx *.elf zerovsh_upatcher.h
 cd ../

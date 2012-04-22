@@ -28,7 +28,7 @@
 u32 sctrlHENFindFunction(const char *modname, const char *libname, u32 nid);
 unsigned int sceKernelQuerySystemCall(void * function);
 
-u32 moduleprobe_nid, vshgetmodel_nid, storagefunc_nid;
+u32 moduleprobe_nid;
 
 nid nids[] =
 {
