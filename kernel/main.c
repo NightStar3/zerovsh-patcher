@@ -504,30 +504,6 @@ void zeroCtrlCreatePatchThread(void) {
 	}	
 }
 //OK
-int zeroCtrlContrast2Hour(void) {	
-	if(strcmp(slideContrast, "Disabled") == 0) {
-		return -1;
-	} else if(strcmp(slideContrast, "1") == 0) {
-		return 6;
-	}  else if(strcmp(slideContrast, "2") == 0) {
-		return 9;
-	}  else if(strcmp(slideContrast, "3") == 0) {
-		return 12;
-	}  else if(strcmp(slideContrast, "4") == 0) {
-		return 15;
-	}  else if(strcmp(slideContrast, "5") == 0) {
-		return 18;
-	}  else if(strcmp(slideContrast, "6") == 0) {
-		return 21;
-	}  else if(strcmp(slideContrast, "7") == 0) {
-		return 3;
-	}  else if(strcmp(slideContrast, "8") == 0) {
-		return 0;
-	} 
-	
-	return -1;
-}
-//OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	model = sceKernelGetModel();
 
