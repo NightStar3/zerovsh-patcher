@@ -504,28 +504,26 @@ void zeroCtrlCreatePatchThread(void) {
 	}	
 }
 //OK
-int zeroCtrlContrast2Hour(void) {	
-	if(strcmp(slideContrast, "Disabled") == 0) {
-		return -1;
-	} else if(strcmp(slideContrast, "1") == 0) {
-		return 6;
-	}  else if(strcmp(slideContrast, "2") == 0) {
-		return 9;
-	}  else if(strcmp(slideContrast, "3") == 0) {
-		return 12;
-	}  else if(strcmp(slideContrast, "4") == 0) {
-		return 15;
-	}  else if(strcmp(slideContrast, "5") == 0) {
-		return 18;
-	}  else if(strcmp(slideContrast, "6") == 0) {
-		return 21;
-	}  else if(strcmp(slideContrast, "7") == 0) {
-		return 3;
-	}  else if(strcmp(slideContrast, "8") == 0) {
-		return 0;
-	} 
+const char *zeroCtrlGetConfig(const char *item) {
+	k1 = pspSdkSetK1(0);
+	char *usermem = zeroCtrlAllocUserBuffer(256);
 	
-	return -1;
+	if(!usermem) {
+		pspSdkSetK1(k1);
+		return NULL;
+	}
+	
+	memset(usermem, 0, 256);
+	ini_gets("General", item, "Disabled", usermem, sizeof(usermem), "ms0:/seplugins/zerovsh.ini");
+	
+	pspSdkSetK1(k1);
+	return usermem;
+}
+//OK
+void zeroCtrlSetConfig(const char *item, const char *value) {
+	k1 = pspSdkSetK1(0);
+	ini_puts("General", item,  value, "ms0:/seplugins/zerovsh.ini");
+	pspSdkSetK1(k1);
 }
 //OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
@@ -541,7 +539,6 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 
 	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
 	ini_gets("General", "SlidePlugin", "Disabled", useSlide, sizeof(useSlide), config);
-	ini_gets("General", "SlideContrast", "Disabled", slideContrast, sizeof(slideContrast), config);
     
 	//zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
 	//zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
