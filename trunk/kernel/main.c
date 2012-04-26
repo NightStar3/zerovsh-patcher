@@ -62,7 +62,7 @@ modules g_modules_mod[] = {
 const char *exts[] = { ".rco", ".pmf", ".bmp", ".pgf", ".prx", ".dat" };
 
 int k1, model;
-SceUID memid;
+SceUID path_id, cfg_id;
 
 PspIoDrv *lflash;
 PspIoDrv *fatms;
@@ -94,20 +94,20 @@ int vshImposeGetParam(u32 value);
 int slideState;
 
 //OK
-void *zeroCtrlAllocUserBuffer(int size) {
+void *zeroCtrlAllocUserBuffer(SceUID uid, int size) {
     void *addr;
     k1 = pspSdkSetK1(0);
-    memid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "pathBuf",
+    uid = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "pathBuf",
             PSP_SMEM_High, size, NULL);
-    addr = (memid >= 0) ? sceKernelGetBlockHeadAddr(memid) : NULL;
+    addr = (uid >= 0) ? sceKernelGetBlockHeadAddr(uid) : NULL;
     pspSdkSetK1(k1);
     return addr;
 }
 //OK
-void zeroCtrlFreeUserBuffer(void) {
-    if (memid >= 0) {
+void zeroCtrlFreeUserBuffer(SceUID uid) {
+    if (uid >= 0) {
         k1 = pspSdkSetK1(0);
-        sceKernelFreePartitionMemory(memid);
+        sceKernelFreePartitionMemory(uid);
         pspSdkSetK1(k1);
     }
 }
@@ -189,7 +189,7 @@ const char *zeroCtrlGetFileName(const char *file) {
 //OK
 char *zeroCtrlSwapFile(const char *file) {
     const char *oldfile;
-    char *newfile = zeroCtrlAllocUserBuffer(256);
+    char *newfile = zeroCtrlAllocUserBuffer(path_id, 256);
 
     if (!newfile) {
         //zeroCtrlWriteDebug("Cannot allocate 256 bytes of memory, abort\n");
@@ -243,7 +243,7 @@ int zeroCtrlIoGetstatEX(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat)
         ret = IoGetstat(arg, file, stat);
     }
 
-    zeroCtrlFreeUserBuffer();
+    zeroCtrlFreeUserBuffer(path_id);
     return ret;
 }
 //OK
@@ -268,7 +268,7 @@ int zeroCtrlIoOpenEX(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode) 
         ret = IoOpen(arg, file, flags, mode);
     }
 
-    zeroCtrlFreeUserBuffer();
+    zeroCtrlFreeUserBuffer(path_id);
     return ret;
 }
 
@@ -504,26 +504,62 @@ void zeroCtrlCreatePatchThread(void) {
 	}	
 }
 //OK
-const char *zeroCtrlGetConfig(const char *item) {
+int zeroCtrlGetConfig(const char *item, char *value) {
 	k1 = pspSdkSetK1(0);
-	char *usermem = zeroCtrlAllocUserBuffer(256);
+	char *usermem = zeroCtrlAllocUserBuffer(cfg_id, 256);
 	
 	if(!usermem) {
 		pspSdkSetK1(k1);
-		return NULL;
+		return -1;
 	}
 	
 	memset(usermem, 0, 256);
 	ini_gets("General", item, "Disabled", usermem, sizeof(usermem), "ms0:/seplugins/zerovsh.ini");
+	strcpy(value, usermem);
 	
+	zeroCtrlFreeUserBuffer(cfg_id);
 	pspSdkSetK1(k1);
-	return usermem;
+	return 0;
 }
 //OK
 void zeroCtrlSetConfig(const char *item, const char *value) {
 	k1 = pspSdkSetK1(0);
 	ini_puts("General", item,  value, "ms0:/seplugins/zerovsh.ini");
 	pspSdkSetK1(k1);
+}
+//OK
+int zeroCtrlGetModel(void) {
+	int ret;
+	k1 = pspSdkSetK1(0);
+	
+	ret = sceKernelGetModel();
+	
+	pspSdkSetK1(k1);
+	return ret;
+}
+//OK
+int zeroCtrlContrast2Hour(void) {		
+	if(strcmp(slideContrast, "Disabled") == 0) {
+		return -1;
+	} else if(strcmp(slideContrast, "1") == 0) {
+		return 6;
+	}  else if(strcmp(slideContrast, "2") == 0) {
+		return 9;
+	}  else if(strcmp(slideContrast, "3") == 0) {
+		return 12;
+	}  else if(strcmp(slideContrast, "4") == 0) {
+		return 15;
+	}  else if(strcmp(slideContrast, "5") == 0) {
+		return 18;
+	}  else if(strcmp(slideContrast, "6") == 0) {
+		return 21;
+	}  else if(strcmp(slideContrast, "7") == 0) {
+		return 3;
+	}  else if(strcmp(slideContrast, "8") == 0) {
+		return 0;
+	} 
+	
+	return -1;
 }
 //OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
@@ -538,8 +574,10 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	const char *config = (model == 4) ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
 
 	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
-	ini_gets("General", "SlidePlugin", "Disabled", useSlide, sizeof(useSlide), config);
-    
+
+	zeroCtrlGetConfig("SlidePlugin", useSlide);
+	zeroCtrlGetConfig("SlideContrast", slideContrast);
+	
 	//zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
 	//zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
 
@@ -551,7 +589,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	//Cool animation after reset vsh with no wallpaper enabled
 	set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);
 	
-	if((model != 4) && (sceKernelDevkitVersion() >= 0x06000010)) {
+	if((model != 4) && (model != 0) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
 		zeroCtrlCreatePatchThread();
 		previous = sctrlHENSetStartModuleHandler(OnModuleStart);    
