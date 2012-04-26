@@ -23,6 +23,7 @@
 #include <pspsysmem_kernel.h>
 #include <pspctrl.h>
 #include <psprtc.h>
+#include <pspsuspend.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -62,7 +63,6 @@ typedef struct
 } SceSysconfItem; //18
 
 STMOD_HANDLER previous = NULL;
-u16 g_hour;
 
 void (* AddSysconfItem)(u32 *option, SceSysconfItem **item) = NULL;
 void add_sysconf_item_stub();
@@ -75,10 +75,11 @@ void vsh_ctrl_stub();
 int zeroCtrlGetSlideState(void);
 void zeroCtrlSetSlideState(int state);
 
-const char *zeroCtrlGetConfig(const char *item);
-void zeroCtrlSetConfig(const char *item, const char *value);
+int zeroCtrlGetConfig(const char *item, const char *value);
+void zeroCtrlSetConfig(const char *item, char *value);
 
 int SetSpeed(int cpufreq, int busfreq);
+int zeroCtrlContrast2Hour(void);
 
 //OK
 void *zeroCtrlRedir2Stub(u32 address, void *stub, void *func) {
@@ -130,37 +131,11 @@ int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
         return ret;
 }
 //OK
-int zeroCtrlContrast2Hour(void) {	
-	const char *slideContrast = zeroCtrlGetConfig("SlideContrast");
-	
-	if(strcmp(slideContrast, "Disabled") == 0) {
-		return -1;
-	} else if(strcmp(slideContrast, "1") == 0) {
-		return 6;
-	}  else if(strcmp(slideContrast, "2") == 0) {
-		return 9;
-	}  else if(strcmp(slideContrast, "3") == 0) {
-		return 12;
-	}  else if(strcmp(slideContrast, "4") == 0) {
-		return 15;
-	}  else if(strcmp(slideContrast, "5") == 0) {
-		return 18;
-	}  else if(strcmp(slideContrast, "6") == 0) {
-		return 21;
-	}  else if(strcmp(slideContrast, "7") == 0) {
-		return 3;
-	}  else if(strcmp(slideContrast, "8") == 0) {
-		return 0;
-	} 
-	
-	return -1;
-}
-//OK
 int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
 	int ret, level;
 	int k1 = pspSdkSetK1(0);
 	
-	ret = sceRtcGetCurrentClockLocalTime(time);
+	ret = sceRtcGetCurrentClockLocalTime(time);	
 	level = zeroCtrlContrast2Hour();
 	
 	if(level != -1) {
