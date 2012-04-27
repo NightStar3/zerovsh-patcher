@@ -10,8 +10,8 @@
 	STUB_START "ZeroCtrlForUser" 0x40090000, 0x00060005
 	STUB_FUNC 0x13373570, zeroCtrlGetSlideState
 	STUB_FUNC 0x13373571, zeroCtrlSetSlideState
-	STUB_FUNC 0x13373572, zeroCtrlGetConfig
-	STUB_FUNC 0x13373573, zeroCtrlSetConfig
+	STUB_FUNC 0x13373572, zeroCtrlGetSlideConfig
+	STUB_FUNC 0x13373573, zeroCtrlSetSlideConfig
 	STUB_FUNC 0x13373574, zeroCtrlGetModel
 	STUB_FUNC 0x13373575, zeroCtrlContrast2Hour
 	STUB_END
