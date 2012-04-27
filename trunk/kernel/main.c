@@ -408,6 +408,7 @@ int zeroCtrlDummyFunc(void) {
 		return -1;
 		
 	}
+	
         pspSdkSetK1(k1);
         return 0;
 }
@@ -422,7 +423,10 @@ int zeroCtrlGetParam(u32 value) {
 			
 			pspSdkSetK1(k1);
 			return 0;         
-		} 
+		} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {	
+			pspSdkSetK1(k1);
+			return 0;      
+		}
         } else {
                 //zeroCtrlWriteDebug("Not our param: 0x%08X\n\n", value);                
         }
@@ -562,6 +566,39 @@ int zeroCtrlContrast2Hour(void) {
 	return -1;
 }
 //OK
+int zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
+	SceCtrlLatch data;
+	
+	while(1) {
+		sceKernelDelayThread(10000);
+		sceCtrlReadLatch(&data);
+	
+		if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
+			if(data.uiMake & PSP_CTRL_HOME) {     
+				zeroCtrlSetSlideState(ZERO_SLIDE_STARTING); 
+			}
+		} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
+			if(data.uiMake & PSP_CTRL_HOME) {         		
+				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING); 
+			}
+		}
+	}
+        
+        return 0;
+}
+//OK
+void zeroCtrlCreateBtnThread(void) {	
+	SceUID thid;
+	
+	thid = sceKernelCreateThread("zeroctrl_btn", zeroCtrlReadButtons, 0x10, 0x10000, 0, NULL);
+	
+	if(thid >= 0) {
+		sceKernelStartThread(thid, 0, NULL);		
+	} else {
+		//zeroCtrlWriteDebug("Thread ID: 0x%08X\n", thid);	
+	}	
+}
+//OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	model = sceKernelGetModel();
 
@@ -574,8 +611,8 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	const char *config = (model == 4) ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
 
 	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
-
-	zeroCtrlGetConfig("SlidePlugin", useSlide);
+	ini_gets("General", "SlidePlugin", "Disabled", useSlide, sizeof(useSlide), config);
+	
 	zeroCtrlGetConfig("SlideContrast", slideContrast);
 	
 	//zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
@@ -592,6 +629,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	if((model != 4) && (model != 0) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
 		zeroCtrlCreatePatchThread();
+		zeroCtrlCreateBtnThread();
 		previous = sctrlHENSetStartModuleHandler(OnModuleStart);    
 	    }
     }
