@@ -69,14 +69,11 @@ void add_sysconf_item_stub();
 
 void slide_check_stub();
 
-int (* vshCtrlReadBufferPositive)(SceCtrlData *pad, int count) = NULL;
-void vsh_ctrl_stub();
-
 int zeroCtrlGetSlideState(void);
 void zeroCtrlSetSlideState(int state);
 
-int zeroCtrlGetConfig(const char *item, const char *value);
-void zeroCtrlSetConfig(const char *item, char *value);
+int zeroCtrlGetSlideConfig(const char *item, const char *value);
+void zeroCtrlSetSlideConfig(const char *item, char *value);
 
 int SetSpeed(int cpufreq, int busfreq);
 int zeroCtrlContrast2Hour(void);
@@ -108,29 +105,6 @@ int zeroCtrlDummyFunc2(void) {
 	return 0;
 }
 //OK
-int zeroCtrlReadBufferPositive(SceCtrlData *pad, int count) {
-	int ret;
-	int k1 = pspSdkSetK1(0);	
-		
-	ret = vshCtrlReadBufferPositive(pad, count);
-	
-        if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
-		if(pad->Buttons & PSP_CTRL_HOME) {     
-			//Fixes 'jump' bug with clock
-			SetSpeed(266, 133);
-			
-                        zeroCtrlSetSlideState(ZERO_SLIDE_STARTING);                     
-                }
-        } else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
-		if(pad->Buttons & PSP_CTRL_HOME) {         		
-                        zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING);                        
-                }
-        }        
-	
-	pspSdkSetK1(k1);
-        return ret;
-}
-//OK
 int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
 	int ret, level;
 	int k1 = pspSdkSetK1(0);
@@ -150,14 +124,11 @@ int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
 int OnModuleStart(SceModule2 *mod) {       
         if(strcmp(mod->modname, "vsh_module") == 0) {
 		if(devkit == 0x06020010) {								
-			zeroCtrlRedir2Stub(mod->text_addr+0x6D78, slide_check_stub, zeroCtrlDummyFunc);
-			//vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3F1B0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
+			zeroCtrlRedir2Stub(mod->text_addr+0x6D78, slide_check_stub, zeroCtrlDummyFunc);			
 		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {		
 			zeroCtrlRedir2Stub(mod->text_addr+0x6F6C, slide_check_stub, zeroCtrlDummyFunc);
-			//vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FA3C, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		} else if(devkit == 0x06060010) {			
 			zeroCtrlRedir2Stub(mod->text_addr+0x6F84, slide_check_stub, zeroCtrlDummyFunc);
-			//vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FAF0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		}
         } else if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
 		if(devkit == 0x06020010) {			

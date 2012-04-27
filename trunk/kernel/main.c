@@ -82,6 +82,7 @@ enum zeroCtrlSlideState {
 static char redir_path[128];
 static char useSlide[128];
 static char slideContrast[128];
+static unsigned long slideStartBtn, slideStopBtn;
 
 int (*msIoOpen)(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
 int (*msIoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
@@ -508,7 +509,7 @@ void zeroCtrlCreatePatchThread(void) {
 	}	
 }
 //OK
-int zeroCtrlGetConfig(const char *item, char *value) {
+int zeroCtrlGetSlideConfig(const char *item, char *value) {
 	k1 = pspSdkSetK1(0);
 	char *usermem = zeroCtrlAllocUserBuffer(cfg_id, 256);
 	
@@ -518,7 +519,7 @@ int zeroCtrlGetConfig(const char *item, char *value) {
 	}
 	
 	memset(usermem, 0, 256);
-	ini_gets("General", item, "Disabled", usermem, sizeof(usermem), "ms0:/seplugins/zerovsh.ini");
+	ini_gets("SlidePlugin", item, "Disabled", usermem, sizeof(usermem), "ms0:/seplugins/zerovsh.ini");
 	strcpy(value, usermem);
 	
 	zeroCtrlFreeUserBuffer(cfg_id);
@@ -526,9 +527,9 @@ int zeroCtrlGetConfig(const char *item, char *value) {
 	return 0;
 }
 //OK
-void zeroCtrlSetConfig(const char *item, const char *value) {
+void zeroCtrlSetSlideConfig(const char *item, const char *value) {
 	k1 = pspSdkSetK1(0);
-	ini_puts("General", item,  value, "ms0:/seplugins/zerovsh.ini");
+	ini_puts("SlidePlugin", item,  value, "ms0:/seplugins/zerovsh.ini");
 	pspSdkSetK1(k1);
 }
 //OK
@@ -565,32 +566,37 @@ int zeroCtrlContrast2Hour(void) {
 	
 	return -1;
 }
+
+#define ALL_ALLOW    (PSP_CTRL_UP|PSP_CTRL_RIGHT|PSP_CTRL_DOWN|PSP_CTRL_LEFT)
+#define ALL_BUTTON   (PSP_CTRL_TRIANGLE|PSP_CTRL_CIRCLE|PSP_CTRL_CROSS|PSP_CTRL_SQUARE)
+#define ALL_TRIGGER  (PSP_CTRL_LTRIGGER|PSP_CTRL_RTRIGGER)
+#define ALL_FUNCTION (PSP_CTRL_SELECT|PSP_CTRL_START|PSP_CTRL_HOME|PSP_CTRL_HOLD|PSP_CTRL_NOTE)
+#define ALL_CTRL     (ALL_ALLOW|ALL_BUTTON|ALL_TRIGGER|ALL_FUNCTION)
+
 //OK
-int zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
-	SceCtrlLatch data;
+void zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
+	SceCtrlLatch data;	
 	
 	while(1) {
 		sceKernelDelayThread(10000);
 		sceCtrlReadLatch(&data);
 	
 		if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
-			if(data.uiMake & PSP_CTRL_HOME) {     
+			if((data.uiMake & ALL_CTRL) == slideStartBtn) {     
 				zeroCtrlSetSlideState(ZERO_SLIDE_STARTING); 
 			}
 		} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
-			if(data.uiMake & PSP_CTRL_HOME) {         		
+			if((data.uiMake & ALL_CTRL) == slideStopBtn) {         		
 				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING); 
 			}
 		}
-	}
-        
-        return 0;
+	}        
 }
 //OK
 void zeroCtrlCreateBtnThread(void) {	
 	SceUID thid;
 	
-	thid = sceKernelCreateThread("zeroctrl_btn", zeroCtrlReadButtons, 0x10, 0x10000, 0, NULL);
+	thid = sceKernelCreateThread("zeroctrl_btn", (void *)zeroCtrlReadButtons, 0x10, 0x10000, 0, NULL);
 	
 	if(thid >= 0) {
 		sceKernelStartThread(thid, 0, NULL);		
@@ -611,9 +617,11 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	const char *config = (model == 4) ? "ef0:/seplugins/zerovsh.ini" : "ms0:/seplugins/zerovsh.ini";
 
 	ini_gets("General", "RedirPath", "/PSP/VSH", redir_path, sizeof(redir_path), config);
-	ini_gets("General", "SlidePlugin", "Disabled", useSlide, sizeof(useSlide), config);
 	
-	zeroCtrlGetConfig("SlideContrast", slideContrast);
+	ini_gets("SlidePlugin", "ClockAndCalendar", "Disabled", useSlide, sizeof(useSlide), config);	
+	slideStartBtn = ini_getlhex("SlidePlugin", "StartBtn", PSP_CTRL_HOME, config);
+	slideStopBtn = ini_getlhex("SlidePlugin", "StopBtn", PSP_CTRL_HOME, config);
+	ini_gets("SlidePlugin", "Contrast", "Disabled", slideContrast, sizeof(slideContrast), config);
 	
 	//zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
 	//zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
