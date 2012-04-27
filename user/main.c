@@ -151,13 +151,13 @@ int OnModuleStart(SceModule2 *mod) {
         if(strcmp(mod->modname, "vsh_module") == 0) {
 		if(devkit == 0x06020010) {								
 			zeroCtrlRedir2Stub(mod->text_addr+0x6D78, slide_check_stub, zeroCtrlDummyFunc);
-			vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3F1B0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
+			//vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3F1B0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {		
 			zeroCtrlRedir2Stub(mod->text_addr+0x6F6C, slide_check_stub, zeroCtrlDummyFunc);
-			vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FA3C, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
+			//vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FA3C, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		} else if(devkit == 0x06060010) {			
 			zeroCtrlRedir2Stub(mod->text_addr+0x6F84, slide_check_stub, zeroCtrlDummyFunc);
-			vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FAF0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
+			//vshCtrlReadBufferPositive = zeroCtrlRedir2Stub(mod->text_addr+0x3FAF0, vsh_ctrl_stub, zeroCtrlReadBufferPositive);
 		}
         } else if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
 		if(devkit == 0x06020010) {			
