@@ -90,9 +90,13 @@ int (*msIoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
 int (*IoOpen)(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
 int (*IoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
 
-int vshImposeGetParam(u32 value);
+int (* scePowerGetBusClockFrequency)(void) = NULL;
+int (* scePowerGetCpuClockFrequency)(void) = NULL;
 
-int slideState;
+int vshImposeGetParam(u32 value);
+int SetSpeed(int cpufreq, int busfreq);
+
+int slideState, cpuOld, busOld;
 
 //OK
 void *zeroCtrlAllocUserBuffer(SceUID uid, int size) {
@@ -566,30 +570,58 @@ int zeroCtrlContrast2Hour(void) {
 	
 	return -1;
 }
+//OK
+void GetSpeed(int *cpufreq, int *busfreq) {
+	if(scePowerGetCpuClockFrequency == NULL) {
+		scePowerGetCpuClockFrequency = (void *)sctrlHENFindFunction("scePower_Service", "scePower", 0xFEE03A2F);		
+	} 
+	
+	zeroCtrlWriteDebug("Found getCpu\n\n");
+	
+	if(scePowerGetBusClockFrequency == NULL) {
+		scePowerGetBusClockFrequency = (void *)sctrlHENFindFunction("scePower_Service", "scePower", 0x478FE6F5);
+		
+	}	
+	
+	zeroCtrlWriteDebug("Found getBus\n\n");
+	
+	*cpufreq = scePowerGetCpuClockFrequency();
+	*busfreq = scePowerGetBusClockFrequency();	
+}
 
 #define ALL_ALLOW    (PSP_CTRL_UP|PSP_CTRL_RIGHT|PSP_CTRL_DOWN|PSP_CTRL_LEFT)
 #define ALL_BUTTON   (PSP_CTRL_TRIANGLE|PSP_CTRL_CIRCLE|PSP_CTRL_CROSS|PSP_CTRL_SQUARE)
 #define ALL_TRIGGER  (PSP_CTRL_LTRIGGER|PSP_CTRL_RTRIGGER)
 #define ALL_FUNCTION (PSP_CTRL_SELECT|PSP_CTRL_START|PSP_CTRL_HOME|PSP_CTRL_HOLD|PSP_CTRL_NOTE)
-#define ALL_CTRL     (ALL_ALLOW|ALL_BUTTON|ALL_TRIGGER|ALL_FUNCTION)
+#define ALL_CTRL  (ALL_ALLOW|ALL_BUTTON|ALL_TRIGGER|ALL_FUNCTION)
 
 //OK
 void zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
 	SceCtrlLatch data;	
 	
-	while(1) {
-		sceKernelDelayThread(10000);
+	while(1) {		
 		sceCtrlReadLatch(&data);
 	
 		if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
 			if((data.uiMake & ALL_CTRL) == slideStartBtn) {     
+				zeroCtrlWriteDebug("Starting slide\n\n");
+				
+				GetSpeed(&cpuOld, &busOld);				
+				SetSpeed(333, 166);
+				
 				zeroCtrlSetSlideState(ZERO_SLIDE_STARTING); 
 			}
 		} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
 			if((data.uiMake & ALL_CTRL) == slideStopBtn) {         		
+				zeroCtrlWriteDebug("Stopping slide\n\n");
+				
+				SetSpeed(cpuOld, busOld);
+				
 				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING); 
 			}
 		}
+		
+		sceKernelDelayThread(10000);
 	}        
 }
 //OK
@@ -632,7 +664,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	zeroCtrlSetSlideState(ZERO_SLIDE_STOPPED);
 			
 	//Cool animation after reset vsh with no wallpaper enabled
-	set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);
+	set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);	
 	
 	if((model != 4) && (model != 0) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
