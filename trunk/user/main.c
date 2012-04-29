@@ -75,7 +75,6 @@ void zeroCtrlSetSlideState(int state);
 int zeroCtrlGetSlideConfig(const char *item, const char *value);
 void zeroCtrlSetSlideConfig(const char *item, char *value);
 
-int SetSpeed(int cpufreq, int busfreq);
 int zeroCtrlContrast2Hour(void);
 
 //OK
