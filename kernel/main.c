@@ -664,7 +664,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	zeroCtrlSetSlideState(ZERO_SLIDE_STOPPED);
 			
 	//Cool animation after reset vsh with no wallpaper enabled
-	set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 0);	
+	set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 1);	
 	
 	if((model != 4) && (model != 0) && (sceKernelDevkitVersion() >= 0x06000010)) {
 	    if(strcmp(useSlide, "Enabled") == 0) {			
