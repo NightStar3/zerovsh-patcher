@@ -35,37 +35,37 @@ nid nids[] =
     {
         	0x237DBD4F,
         	0x5630F321,
-            0xEA349DC6,
+		0xEA349DC6,
         	0xE5E18A99,
         	0x4621A9CC,
-            0x7158CE7E,
+		0x7158CE7E,
         	(u32)sceKernelAllocPartitionMemory,
     },
     {
         	0xB6D61D02,
         	0xAFBE8876,
-            0xE8120E5C,
+		0xE8120E5C,
         	0x093DE56A,
         	0x8FDAFC4C,
-            0xC1A26C6F,
+		0xC1A26C6F,
         	(u32)sceKernelFreePartitionMemory,
     },
     {
         	0x9D9A5BA1,
         	0x950BCB31,
-            0x2BDA1AC9,
+		0x2BDA1AC9,
         	0xFEB5C72B,
         	0x52B54B93,
-            0xF12A62F7,
+		0xF12A62F7,
         	(u32)sceKernelGetBlockHeadAddr,
     },
     {
         	0x8B61808B,
         	0xEB988556,
-            0x3D5EE53F,
+		0x3D5EE53F,
         	0xAC9306F0,
         	0x399FF74C,
-            0xF153B371,
+		0xF153B371,
         	(u32)sceKernelQuerySystemCall,
     },
     {
@@ -77,12 +77,40 @@ nid nids[] =
             0x41D10899,
             (u32)sceKernelProbeExecutableObject,
     },
+    {
+            0xCF8A41B1,
+            0x0B53340F,
+            0xDEADBEEF,
+            0xBEF0A05E,
+            0xEF8A0BEA,
+            0xF6B1BF0F,
+            (u32)sceKernelFindModuleByName,
+    },
+    {
+            0xBA889C07,
+            0x4D473652,
+            0xDEADBEEF,
+            0x5352C26C,
+            0x412D6ECC,
+            0x4E62C48A,
+            (u32)sceKernelLoadModuleBuffer,
+    },
+    {
+            0x50F0C1EC,
+            0xBB8C8FDF,
+            0xDEADBEEF,
+            0xDF8FFFAB,
+            0xE6BF3960,
+            0x3FF74DF1,
+            (u32)sceKernelStartModule,
+    },
 };
 
 libname libs[] = {
                 { "sceSystemMemoryManager", "SysMemForKernel"              , 3 },
                 { "sceInterruptManager"   , "InterruptManagerForKernel"    , 4 },
-                { "sceLoaderCore"         , "LoadCoreForKernel"    	       , 5 },
+                { "sceLoaderCore"         , "LoadCoreForKernel"    	       , 6 },
+		{ "sceModuleManager", "ModuleMgrForKernel", 8 },
 };
 
 void zeroCtrlResolveNids(void) {
@@ -120,8 +148,7 @@ void zeroCtrlResolveNids(void) {
     		continue;
     	}
 
-    	if((!strcmp(libs[count].prxname, "sceLoaderCore")) && 
-    	   (!strcmp(libs[count].name, "LoadCoreForKernel"))) {
+    	if(nids[i].stub == (u32)sceKernelProbeExecutableObject) {
     		   moduleprobe_nid = fw_nid;
     	}
 

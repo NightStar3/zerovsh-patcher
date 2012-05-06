@@ -24,6 +24,7 @@
 #include <pspctrl.h>
 #include <pspreg.h>
 #include <pspsuspend.h>
+#include <pspdisplay_kernel.h>
 
 // from CFW SDK
 #include "pspmodulemgr_kernel.h"
@@ -68,7 +69,7 @@ PspIoDrv *lflash;
 PspIoDrv *fatms;
 static PspIoDrvArg * ms_drv = NULL;
 STMOD_HANDLER previous = NULL;
-
+int brightness;
 
 enum zeroCtrlSlideState {
         ZERO_SLIDE_LOADING = 1,
@@ -82,7 +83,9 @@ enum zeroCtrlSlideState {
 static char redir_path[128];
 static char useSlide[128];
 static char slideContrast[128];
+static char ledDisable[128];
 static unsigned long slideStartBtn, slideStopBtn;
+static long b_level;
 
 int (*msIoOpen)(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
 int (*msIoGetstat)(PspIoDrvFileArg *arg, const char *file, SceIoStat *stat);
@@ -94,7 +97,8 @@ int (* scePowerGetBusClockFrequency)(void) = NULL;
 int (* scePowerGetCpuClockFrequency)(void) = NULL;
 
 int vshImposeGetParam(u32 value);
-int SetSpeed(int cpufreq, int busfreq);
+int sctrlHENSetSpeed(int cpufreq, int busfreq);
+int sceSysconCtrlLED(int SceLED, int state);
 
 int slideState, cpuOld, busOld;
 
@@ -397,6 +401,24 @@ void zeroCtrlSetSlideState(int state) {
 	slideState = state;
 }
 //OK
+void zeroCtrlGetVshFolders(void) {
+	SceUID fd = sceIoDopen("ms0:/PSP/VSH");
+	SceIoDirent dir;
+	
+	memset(&dir, 0, sizeof(SceIoDirent));
+  
+	while (sceIoDread(fd, &dir) > 0)
+	{
+		if(FIO_SO_ISDIR(dir.d_stat.st_attr)) {
+			if(strncmp(dir.d_name, ".", 1) != 0) {				
+				zeroCtrlWriteDebug("%s\n", dir.d_name);
+			}
+		}
+	} 
+	
+	sceIoDclose(fd); 
+}
+//OK
 int zeroCtrlDummyFunc(void) {
         k1 = pspSdkSetK1(0);               
 	
@@ -588,6 +610,27 @@ void GetSpeed(int *cpufreq, int *busfreq) {
 	*cpufreq = scePowerGetCpuClockFrequency();
 	*busfreq = scePowerGetBusClockFrequency();	
 }
+//OK
+void zeroCtrlSetLEDState(int state) {
+	if(strcmp(ledDisable, "Enabled") == 0) {
+		sceSysconCtrlLED(0, state);
+		sceSysconCtrlLED(1, state);
+		sceSysconCtrlLED(2, state);
+		sceSysconCtrlLED(3, state);
+		sceSysconCtrlLED(4, state);
+	}
+}
+//OK
+void zeroCtrlSetBrightness(int level, int restore) {
+	if(level != -1) {
+		if(!restore) {
+			sceDisplayGetBrightness(&brightness, 0);
+			sceDisplaySetBrightness(level, 0);			
+		} else {					
+			sceDisplaySetBrightness(brightness, 0);
+		}
+	}
+}
 
 #define ALL_ALLOW    (PSP_CTRL_UP|PSP_CTRL_RIGHT|PSP_CTRL_DOWN|PSP_CTRL_LEFT)
 #define ALL_BUTTON   (PSP_CTRL_TRIANGLE|PSP_CTRL_CIRCLE|PSP_CTRL_CROSS|PSP_CTRL_SQUARE)
@@ -604,20 +647,26 @@ void zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
 	
 		if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
 			if((data.uiMake & ALL_CTRL) == slideStartBtn) {     
-				zeroCtrlWriteDebug("Starting slide\n\n");
+				zeroCtrlWriteDebug("Starting slide\n\n");				
 				
 				GetSpeed(&cpuOld, &busOld);				
-				SetSpeed(333, 166);
+				sctrlHENSetSpeed(333, 166);				
 				
 				zeroCtrlSetSlideState(ZERO_SLIDE_STARTING); 
+				
+				zeroCtrlSetLEDState(0);			
+				zeroCtrlSetBrightness(b_level, 0);
 			}
 		} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
 			if((data.uiMake & ALL_CTRL) == slideStopBtn) {         		
 				zeroCtrlWriteDebug("Stopping slide\n\n");
 				
-				SetSpeed(cpuOld, busOld);
+				sctrlHENSetSpeed(cpuOld, busOld);				
 				
-				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING); 
+				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING);
+				
+				zeroCtrlSetLEDState(1);
+				zeroCtrlSetBrightness(0, 1);
 			}
 		}
 		
@@ -654,6 +703,8 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	slideStartBtn = ini_getlhex("SlidePlugin", "StartBtn", PSP_CTRL_HOME, config);
 	slideStopBtn = ini_getlhex("SlidePlugin", "StopBtn", PSP_CTRL_HOME, config);
 	ini_gets("SlidePlugin", "Contrast", "Disabled", slideContrast, sizeof(slideContrast), config);
+	ini_gets("PowerSave", "LED", "Disabled", ledDisable, sizeof(ledDisable), config);
+	b_level = ini_getlhex("PowerSave", "Brightness", -1, config);
 	
 	//zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
 	//zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
@@ -666,9 +717,10 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	//Cool animation after reset vsh with no wallpaper enabled
 	set_registry_value("/CONFIG/SYSTEM", "slide_welcome", 1);	
 	
+	zeroCtrlCreatePatchThread();
+	
 	if((model != 4) && (model != 0) && (sceKernelDevkitVersion() >= 0x06000010)) {
-	    if(strcmp(useSlide, "Enabled") == 0) {			
-		zeroCtrlCreatePatchThread();
+	    if(strcmp(useSlide, "Enabled") == 0) {					
 		zeroCtrlCreateBtnThread();
 		previous = sctrlHENSetStartModuleHandler(OnModuleStart);    
 	    }

@@ -76,6 +76,9 @@ int zeroCtrlGetSlideConfig(const char *item, const char *value);
 void zeroCtrlSetSlideConfig(const char *item, char *value);
 
 int zeroCtrlContrast2Hour(void);
+int zeroCtrlGetModel(void);
+
+int model;
 
 //OK
 void *zeroCtrlRedir2Stub(u32 address, void *stub, void *func) {
@@ -105,8 +108,8 @@ int zeroCtrlDummyFunc2(void) {
 }
 //OK
 int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
-	int ret, level;
-	int k1 = pspSdkSetK1(0);
+	int ret, level;		
+	int k1 = pspSdkSetK1(0);	
 	
 	ret = sceRtcGetCurrentClockLocalTime(time);	
 	level = zeroCtrlContrast2Hour();
@@ -121,26 +124,30 @@ int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
 }
 //OK
 int OnModuleStart(SceModule2 *mod) {       
-        if(strcmp(mod->modname, "vsh_module") == 0) {
-		if(devkit == 0x06020010) {								
-			zeroCtrlRedir2Stub(mod->text_addr+0x6D78, slide_check_stub, zeroCtrlDummyFunc);			
-		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {		
-			zeroCtrlRedir2Stub(mod->text_addr+0x6F6C, slide_check_stub, zeroCtrlDummyFunc);
-		} else if(devkit == 0x06060010) {			
-			zeroCtrlRedir2Stub(mod->text_addr+0x6F84, slide_check_stub, zeroCtrlDummyFunc);
-		}
-        } else if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
-		if(devkit == 0x06020010) {			
-			AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x27918, add_sysconf_item_stub, zeroCtrlAddSysconfItem);		
-		} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {			
-			AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x2828C, add_sysconf_item_stub, zeroCtrlAddSysconfItem);		
-		} else if(devkit == 0x06060010) {
-			AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x286AC, add_sysconf_item_stub, zeroCtrlAddSysconfItem);			
-		}
-		
-		//To avoid the 'open slide' prompt after format 
-		MAKE_CALL(mod->text_addr+0x240, zeroCtrlDummyFunc2);
-	} else if(strcmp(mod->modname, "slide_plugin_module") == 0) {
+	if((model != 0) && (model != 4)) {
+		if(strcmp(mod->modname, "vsh_module") == 0) {
+			if(devkit == 0x06020010) {								
+				zeroCtrlRedir2Stub(mod->text_addr+0x6D78, slide_check_stub, zeroCtrlDummyFunc);			
+			} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {		
+				zeroCtrlRedir2Stub(mod->text_addr+0x6F6C, slide_check_stub, zeroCtrlDummyFunc);
+			} else if(devkit == 0x06060010) {			
+				zeroCtrlRedir2Stub(mod->text_addr+0x6F84, slide_check_stub, zeroCtrlDummyFunc);
+			}
+		} else if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
+			if(devkit == 0x06020010) {			
+				AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x27918, add_sysconf_item_stub, zeroCtrlAddSysconfItem);		
+			} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {			
+				AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x2828C, add_sysconf_item_stub, zeroCtrlAddSysconfItem);		
+			} else if(devkit == 0x06060010) {
+				AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x286AC, add_sysconf_item_stub, zeroCtrlAddSysconfItem);			
+			}
+			
+			//To avoid the 'open slide' prompt after format 
+			MAKE_CALL(mod->text_addr+0x240, zeroCtrlDummyFunc2);
+		}  
+	}
+	
+	if(strcmp(mod->modname, "slide_plugin_module") == 0) {
 		MAKE_CALL(mod->text_addr+0xC990, zeroCtrlGetCurrentClockLocalTime);
 	}
 	
@@ -148,6 +155,7 @@ int OnModuleStart(SceModule2 *mod) {
 }
 //OK
 int module_start(SceSize args UNUSED, void *argp UNUSED) {  	
+	model = zeroCtrlGetModel();
 	devkit = sceKernelDevkitVersion();	
 	
 	previous = sctrlHENSetStartModuleHandler(OnModuleStart);        
