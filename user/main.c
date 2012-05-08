@@ -24,6 +24,7 @@
 #include <pspctrl.h>
 #include <psprtc.h>
 #include <pspsuspend.h>
+#include <psppower.h>
 
 #include <string.h>
 #include <stdio.h>

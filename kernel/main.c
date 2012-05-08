@@ -99,6 +99,7 @@ int (* scePowerGetCpuClockFrequency)(void) = NULL;
 int vshImposeGetParam(u32 value);
 int sctrlHENSetSpeed(int cpufreq, int busfreq);
 int sceSysconCtrlLED(int SceLED, int state);
+int sceKernelPowerTick (int type);
 
 int slideState;
 int cpuOld = -1, busOld = -1;
@@ -659,11 +660,7 @@ void zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
 			}
 		} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
 			if((data.uiMake & ALL_CTRL) == slideStopBtn) {         		
-				zeroCtrlWriteDebug("Stopping slide\n\n");
-				
-				if((cpuOld != -1) && (busOld != -1)) {
-					sctrlHENSetSpeed(cpuOld, busOld);
-				}
+				zeroCtrlWriteDebug("Stopping slide\n\n");			
 				
 				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING);			
 				
@@ -672,7 +669,16 @@ void zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
 				}
 				
 				zeroCtrlRestoreLEDState();
+				
+				if((cpuOld != -1) && (busOld != -1)) {
+					sceKernelDelayThread(1000000);
+					sctrlHENSetSpeed(cpuOld, busOld);
+				}
 			}
+		}
+		
+		if((zeroCtrlGetSlideState() == ZERO_SLIDE_STARTING) || (zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED)) {
+			sceKernelPowerTick(6);
 		}
 		
 		sceKernelDelayThread(10000);
