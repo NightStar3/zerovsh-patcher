@@ -69,7 +69,7 @@ PspIoDrv *lflash;
 PspIoDrv *fatms;
 static PspIoDrvArg * ms_drv = NULL;
 STMOD_HANDLER previous = NULL;
-int brightness;
+int brightness = -1;
 
 enum zeroCtrlSlideState {
         ZERO_SLIDE_LOADING = 1,
@@ -100,7 +100,8 @@ int vshImposeGetParam(u32 value);
 int sctrlHENSetSpeed(int cpufreq, int busfreq);
 int sceSysconCtrlLED(int SceLED, int state);
 
-int slideState, cpuOld, busOld;
+int slideState;
+int cpuOld = -1, busOld = -1;
 
 //OK
 void *zeroCtrlAllocUserBuffer(SceUID uid, int size) {
@@ -401,24 +402,6 @@ void zeroCtrlSetSlideState(int state) {
 	slideState = state;
 }
 //OK
-void zeroCtrlGetVshFolders(void) {
-	SceUID fd = sceIoDopen("ms0:/PSP/VSH");
-	SceIoDirent dir;
-	
-	memset(&dir, 0, sizeof(SceIoDirent));
-  
-	while (sceIoDread(fd, &dir) > 0)
-	{
-		if(FIO_SO_ISDIR(dir.d_stat.st_attr)) {
-			if(strncmp(dir.d_name, ".", 1) != 0) {				
-				zeroCtrlWriteDebug("%s\n", dir.d_name);
-			}
-		}
-	} 
-	
-	sceIoDclose(fd); 
-}
-//OK
 int zeroCtrlDummyFunc(void) {
         k1 = pspSdkSetK1(0);               
 	
@@ -498,7 +481,7 @@ int OnModuleStart(SceModule2 *mod) {
         
         if(strcmp(mod->modname, "slide_plugin_module") == 0) {            
                 hook_import_bynid(mod, "sceBSMan", 0x23E3A9B6, zeroCtrlDummyFunc, 1);
-                hook_import_bynid(mod, "sceVshBridge", 0x639C3CB3, zeroCtrlGetParam, 1);		
+                hook_import_bynid(mod, "sceVshBridge", 0x639C3CB3, zeroCtrlGetParam, 1);				
         }
         
        ClearCaches();
@@ -611,25 +594,48 @@ void GetSpeed(int *cpufreq, int *busfreq) {
 	*busfreq = scePowerGetBusClockFrequency();	
 }
 //OK
-void zeroCtrlSetLEDState(int state) {
+void zeroCtrlSetLEDState(void) {
+	k1 = pspSdkSetK1(0);
+	
 	if(strcmp(ledDisable, "Enabled") == 0) {
-		sceSysconCtrlLED(0, state);
-		sceSysconCtrlLED(1, state);
-		sceSysconCtrlLED(2, state);
-		sceSysconCtrlLED(3, state);
-		sceSysconCtrlLED(4, state);
+		sceSysconCtrlLED(0, 0);
+		sceSysconCtrlLED(1, 0);
+		sceSysconCtrlLED(2, 0);
+		sceSysconCtrlLED(3, 0);
+		sceSysconCtrlLED(4, 0);
+	}
+	
+	pspSdkSetK1(k1);
+}
+//OK
+void zeroCtrlRestoreLEDState(void) {
+	if(strcmp(ledDisable, "Enabled") == 0) {
+		sceSysconCtrlLED(0, 1);
+		sceSysconCtrlLED(1, 1);
+		sceSysconCtrlLED(2, 1);
+		sceSysconCtrlLED(3, 1);
+		sceSysconCtrlLED(4, 1);
 	}
 }
 //OK
-void zeroCtrlSetBrightness(int level, int restore) {
-	if(level != -1) {
-		if(!restore) {
-			sceDisplayGetBrightness(&brightness, 0);
-			sceDisplaySetBrightness(level, 0);			
-		} else {					
-			sceDisplaySetBrightness(brightness, 0);
-		}
+void zeroCtrlSetBrightness(void) {
+	k1 = pspSdkSetK1(0);
+	
+	if(b_level != -1) {
+		sceDisplayGetBrightness(&brightness, NULL);
+		sceDisplaySetBrightness(b_level, 0);	
 	}
+	
+	pspSdkSetK1(k1);
+}
+//OK
+void zeroCtrlSetClockSpeed(void) {
+	k1 = pspSdkSetK1(0);
+	
+	GetSpeed(&cpuOld, &busOld);				
+	sctrlHENSetSpeed(333, 166);	
+	
+	pspSdkSetK1(k1);
 }
 
 #define ALL_ALLOW    (PSP_CTRL_UP|PSP_CTRL_RIGHT|PSP_CTRL_DOWN|PSP_CTRL_LEFT)
@@ -647,26 +653,25 @@ void zeroCtrlReadButtons(SceSize args UNUSED, void *argp UNUSED) {
 	
 		if(zeroCtrlGetSlideState() == ZERO_SLIDE_STOPPED) {
 			if((data.uiMake & ALL_CTRL) == slideStartBtn) {     
-				zeroCtrlWriteDebug("Starting slide\n\n");				
+				zeroCtrlWriteDebug("Starting slide\n\n");		
 				
-				GetSpeed(&cpuOld, &busOld);				
-				sctrlHENSetSpeed(333, 166);				
-				
-				zeroCtrlSetSlideState(ZERO_SLIDE_STARTING); 
-				
-				zeroCtrlSetLEDState(0);			
-				zeroCtrlSetBrightness(b_level, 0);
+				zeroCtrlSetSlideState(ZERO_SLIDE_STARTING); 								
 			}
 		} else if(zeroCtrlGetSlideState() == ZERO_SLIDE_STARTED) {
 			if((data.uiMake & ALL_CTRL) == slideStopBtn) {         		
 				zeroCtrlWriteDebug("Stopping slide\n\n");
 				
-				sctrlHENSetSpeed(cpuOld, busOld);				
+				if((cpuOld != -1) && (busOld != -1)) {
+					sctrlHENSetSpeed(cpuOld, busOld);
+				}
 				
-				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING);
+				zeroCtrlSetSlideState(ZERO_SLIDE_STOPPING);			
 				
-				zeroCtrlSetLEDState(1);
-				zeroCtrlSetBrightness(0, 1);
+				if(b_level != -1) {
+					sceDisplaySetBrightness(brightness, 0);
+				}
+				
+				zeroCtrlRestoreLEDState();
 			}
 		}
 		
@@ -704,7 +709,7 @@ int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	slideStopBtn = ini_getlhex("SlidePlugin", "StopBtn", PSP_CTRL_HOME, config);
 	ini_gets("SlidePlugin", "Contrast", "Disabled", slideContrast, sizeof(slideContrast), config);
 	ini_gets("PowerSave", "LED", "Disabled", ledDisable, sizeof(ledDisable), config);
-	b_level = ini_getlhex("PowerSave", "Brightness", -1, config);
+	b_level = ini_getl("PowerSave", "Brightness", -1, config);
 	
 	//zeroCtrlWriteDebug("using [%s] as RedirPath\n", redir_path); 
 	//zeroCtrlWriteDebug("using [%s] as SlidePlugin\n", useSlide); 
