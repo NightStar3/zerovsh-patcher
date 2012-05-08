@@ -14,3 +14,4 @@
 
 CREATE_STUB add_sysconf_item_stub
 CREATE_STUB slide_check_stub
+CREATE_STUB slide_start_stub

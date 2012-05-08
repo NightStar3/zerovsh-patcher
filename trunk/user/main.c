@@ -69,6 +69,9 @@ void add_sysconf_item_stub();
 
 void slide_check_stub();
 
+void (* origFuncInit)(u32 *unk0) = NULL;
+void slide_start_stub();
+
 int zeroCtrlGetSlideState(void);
 void zeroCtrlSetSlideState(int state);
 
@@ -77,6 +80,9 @@ void zeroCtrlSetSlideConfig(const char *item, char *value);
 
 int zeroCtrlContrast2Hour(void);
 int zeroCtrlGetModel(void);
+void zeroCtrlSetLEDState(void);
+void zeroCtrlSetBrightness(void);
+void zeroCtrlSetClockSpeed(void);
 
 int model;
 
@@ -123,6 +129,14 @@ int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
 	return ret;
 }
 //OK
+void InjectionEntryFuncInit(u32 *unk0) {
+	zeroCtrlSetLEDState();	
+	zeroCtrlSetBrightness();
+	zeroCtrlSetClockSpeed();
+	
+	origFuncInit(unk0);
+}
+//OK
 int OnModuleStart(SceModule2 *mod) {       
 	if((model != 0) && (model != 4)) {
 		if(strcmp(mod->modname, "vsh_module") == 0) {
@@ -149,6 +163,7 @@ int OnModuleStart(SceModule2 *mod) {
 	
 	if(strcmp(mod->modname, "slide_plugin_module") == 0) {
 		MAKE_CALL(mod->text_addr+0xC990, zeroCtrlGetCurrentClockLocalTime);
+		origFuncInit = zeroCtrlRedir2Stub(mod->text_addr+0x9038, slide_start_stub, InjectionEntryFuncInit);		
 	}
 	
        return previous ? previous(mod) : 0;
