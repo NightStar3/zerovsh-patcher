@@ -15,6 +15,8 @@
  * along with ZeroVSH Patcher. If not, see <http://www.gnu.org/licenses/ .
  */
 
+#include <time.h>
+
 //Headers
 #include <pspsdk.h>
 #include <psputilsforkernel.h>
@@ -114,16 +116,16 @@ int zeroCtrlDummyFunc2(void) {
 	return 0;
 }
 //OK
-int zeroCtrlGetCurrentClockLocalTime(pspTime *time) {
+int zeroCtrlGetCurrentClockLocalTime(pspTime *ptime) {
 	int ret, level;		
 	int k1 = pspSdkSetK1(0);	
 	
-	ret = sceRtcGetCurrentClockLocalTime(time);	
+	ret = sceRtcGetCurrentClockLocalTime(ptime);
 	level = zeroCtrlContrast2Hour();
 	
 	if(level != -1) {
-		time->hour = level;
-		time->minutes = 0;
+		ptime->hour = level;
+		ptime->minutes = 0;
 	}
 	
 	pspSdkSetK1(k1);
