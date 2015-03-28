@@ -1,11 +1,11 @@
-ZeroVSH Patcher v0.3 - NightStar3 and codestation
+ZeroVSH Patcher v0.4 - NightStar3 and codestation
 
 ZeroVSH Patcher is a plugin that allows users to customize their PSP to the 
 fullest extent without writting to the flash0. ZeroVSH Patcher redirects the
 loading of various file types from flash to your memory stick or internal storage, 
 thus removing the fear of bricking.
 
-In version 0.2, there is support for the psp go's clock and calendar on other psp models (currently psp 1k is not supported)
+From version 0.2, there is support for the psp go's clock and calendar on other psp models (currently psp 1k is not supported)
 Please scroll down for further information. 
 
 
@@ -54,13 +54,12 @@ The plugin will be compiled to the /bin folder in the trunk
 
 -- Note --
 
- If you have a patch you want to submit, contact one of the active developers and we shall add your
-patch to the svn, and add your name to the credits
+If you have a patch you want to submit then make a pull request on github, and we add your name to the credits.
 
 If you are interested in becoming an active developer for the project, contact one of the project leaders
-and we shall give your rights to the svn, if you qualify
+and we shall give your rights to the git repo, if you qualify
 
-You can download the source code from http://code.google.com/p/zerovsh-patcher/
+You can download the source code from https://github.com/NightStar3/zerovsh-patcher
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
