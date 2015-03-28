@@ -1,4 +1,4 @@
-ZeroVSH Patcher v0.2 - NightStar3 and codestation
+ZeroVSH Patcher v0.3 - NightStar3 and codestation
 
 ZeroVSH Patcher is a plugin that allows users to customize their PSP to the 
 fullest extent without writting to the flash0. ZeroVSH Patcher redirects the
@@ -90,6 +90,8 @@ File types supported:
 
 
 Changelog
+v0.4:
+[+] Added support for FW 6.61
 v0.3:
 [+] Fixed bt prompt bug
 [+] Fixed battery information bug

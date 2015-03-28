@@ -700,8 +700,8 @@ void zeroCtrlCreateBtnThread(void) {
 int module_start(SceSize args UNUSED, void *argp UNUSED) {
 	model = sceKernelGetModel();
 
-	zeroCtrlWriteDebug("ZeroVSH Patcher v0.2\n");
-	zeroCtrlWriteDebug("Copyright 2011-2012 (C) NightStar3 and codestation\n");
+	zeroCtrlWriteDebug("ZeroVSH Patcher v0.4\n");
+	zeroCtrlWriteDebug("Copyright 2011-2015 (C) NightStar3 and codestation\n");
 	zeroCtrlWriteDebug("[--- Full version ---]\n\n");
 
 	zeroCtrlResolveNids();
