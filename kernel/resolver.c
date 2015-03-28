@@ -135,7 +135,7 @@ void zeroCtrlResolveNids(void) {
     		fw_nid = nids[i].nid620;
     	} else if((fw_version >= 0x06030010) && (fw_version <= 0x06030910)) {
     		fw_nid = nids[i].nid63x;
-    	} else if(fw_version == 0x06060010) {
+        } else if((fw_version == 0x06060010) || (fw_version == 0x06060110)) {
     		fw_nid = nids[i].nid660;
     	} else {
     		zeroCtrlWriteDebug("unknown firmware version: %08X\n", fw_version);
