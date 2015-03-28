@@ -147,7 +147,7 @@ int OnModuleStart(SceModule2 *mod) {
 				zeroCtrlRedir2Stub(mod->text_addr+0x6D78, slide_check_stub, zeroCtrlDummyFunc);			
 			} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {		
 				zeroCtrlRedir2Stub(mod->text_addr+0x6F6C, slide_check_stub, zeroCtrlDummyFunc);
-			} else if(devkit == 0x06060010) {			
+			} else if((devkit == 0x06060010) || (devkit == 0x06060110)) {
 				zeroCtrlRedir2Stub(mod->text_addr+0x6F84, slide_check_stub, zeroCtrlDummyFunc);
 			}
 		} else if(strcmp(mod->modname, "sysconf_plugin_module") == 0) {
@@ -155,7 +155,7 @@ int OnModuleStart(SceModule2 *mod) {
 				AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x27918, add_sysconf_item_stub, zeroCtrlAddSysconfItem);		
 			} else if((devkit >= 0x06030010) && (devkit <= 0x06030910)) {			
 				AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x2828C, add_sysconf_item_stub, zeroCtrlAddSysconfItem);		
-			} else if(devkit == 0x06060010) {
+			} else if((devkit == 0x06060010) || (devkit == 0x06060110)) {
 				AddSysconfItem = zeroCtrlRedir2Stub(mod->text_addr+0x286AC, add_sysconf_item_stub, zeroCtrlAddSysconfItem);			
 			}
 			
